@@ -35,7 +35,11 @@ export default function Navigation() {
             <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-reviews">
               Reviews
             </a>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-white" data-testid="button-get-started">
+            <Button 
+              className="bg-amber-500 hover:bg-amber-600 text-white" 
+              data-testid="button-get-started"
+              onClick={() => window.location.href = '/signup'}
+            >
               Get Started
             </Button>
           </div>
@@ -66,7 +70,11 @@ export default function Navigation() {
               <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-reviews">
                 Reviews
               </a>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-white w-fit" data-testid="mobile-button-get-started">
+              <Button 
+                className="bg-amber-500 hover:bg-amber-600 text-white w-fit" 
+                data-testid="mobile-button-get-started"
+                onClick={() => window.location.href = '/signup'}
+              >
                 Get Started
               </Button>
             </div>

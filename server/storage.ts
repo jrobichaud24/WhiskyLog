@@ -1,4 +1,8 @@
 import { type User, type InsertUser, type Whisky, type InsertWhisky, type UserWhisky, type InsertUserWhisky } from "@shared/schema";
+import { db } from "./db";
+import { users, whiskies, userWhiskies } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -6,6 +10,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   
   getWhiskies(): Promise<Whisky[]>;
   getWhisky(id: string): Promise<Whisky | undefined>;
@@ -17,6 +22,98 @@ export interface IStorage {
   updateUserWhisky(id: string, userWhisky: Partial<InsertUserWhisky>): Promise<UserWhisky | undefined>;
 }
 
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        password: hashedPassword,
+      })
+      .returning();
+    
+    return user;
+  }
+
+  async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    const result = await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async getWhiskies(): Promise<Whisky[]> {
+    return await db.select().from(whiskies);
+  }
+
+  async getWhisky(id: string): Promise<Whisky | undefined> {
+    const [whisky] = await db.select().from(whiskies).where(eq(whiskies.id, id));
+    return whisky || undefined;
+  }
+
+  async createWhisky(insertWhisky: InsertWhisky): Promise<Whisky> {
+    const [whisky] = await db
+      .insert(whiskies)
+      .values(insertWhisky)
+      .returning();
+    return whisky;
+  }
+
+  async getUserWhiskies(userId: string): Promise<UserWhisky[]> {
+    return await db.select().from(userWhiskies).where(eq(userWhiskies.userId, userId));
+  }
+
+  async getUserWhisky(userId: string, whiskyId: string): Promise<UserWhisky | undefined> {
+    const [userWhisky] = await db
+      .select()
+      .from(userWhiskies)
+      .where(eq(userWhiskies.userId, userId))
+      .where(eq(userWhiskies.whiskyId, whiskyId));
+    return userWhisky || undefined;
+  }
+
+  async createUserWhisky(insertUserWhisky: InsertUserWhisky): Promise<UserWhisky> {
+    const [userWhisky] = await db
+      .insert(userWhiskies)
+      .values(insertUserWhisky)
+      .returning();
+    return userWhisky;
+  }
+
+  async updateUserWhisky(id: string, updates: Partial<InsertUserWhisky>): Promise<UserWhisky | undefined> {
+    const [userWhisky] = await db
+      .update(userWhiskies)
+      .set(updates)
+      .where(eq(userWhiskies.id, id))
+      .returning();
+    return userWhisky || undefined;
+  }
+}
+
+// Keep MemStorage class for fallback/testing
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private whiskies: Map<string, Whisky>;
@@ -115,6 +212,15 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    user.password = newPassword;
+    this.users.set(userId, user);
+    return true;
+  }
+
   async getWhiskies(): Promise<Whisky[]> {
     return Array.from(this.whiskies.values());
   }
@@ -167,4 +273,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
