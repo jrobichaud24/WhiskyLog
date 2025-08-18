@@ -37,7 +37,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           <div data-testid="footer-brand">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 rounded-lg overflow-hidden">
+              <div className="w-16 h-16 rounded-lg overflow-hidden">
                 <img 
                   src="/logo.png" 
                   alt="The Dram Journal Logo" 
