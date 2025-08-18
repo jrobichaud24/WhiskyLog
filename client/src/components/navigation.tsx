@@ -16,7 +16,7 @@ export default function Navigation() {
               </svg>
             </div>
             <span className="font-playfair text-2xl font-bold text-amber-600" data-testid="logo">
-              WhiskyVault
+              The Dram Journal
             </span>
           </div>
           

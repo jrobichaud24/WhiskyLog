@@ -1,6 +1,6 @@
 {
-  "name": "WhiskyVault - Track Your Whisky Journey",
-  "short_name": "WhiskyVault",
+  "name": "The Dram Journal - Track Your Whisky Journey",
+  "short_name": "The Dram Journal",
   "description": "Track, rate, and discover exceptional single malt scotch whiskies",
   "start_url": "/",
   "display": "standalone",
@@ -36,14 +36,14 @@
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "WhiskyVault mobile view"
+      "label": "The Dram Journal mobile view"
     },
     {
       "src": "/screenshot-desktop.png",
       "sizes": "1920x1080", 
       "type": "image/png",
       "form_factor": "wide",
-      "label": "WhiskyVault desktop view"
+      "label": "The Dram Journal desktop view"
     }
   ]
 }

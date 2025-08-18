@@ -22,10 +22,10 @@ export default function CallToAction() {
             variant="secondary"
             className="bg-white text-amber-600 hover:bg-gray-100 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all"
             onClick={handleInstallApp}
-            data-testid="button-install-whiskyvault"
+            data-testid="button-install-dramjournal"
           >
             <Download className="mr-2 h-5 w-5" />
-            Install WhiskyVault
+            Install The Dram Journal
           </Button>
           <Button 
             size="lg"

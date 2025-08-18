@@ -43,7 +43,7 @@ export default function Footer() {
                 </svg>
               </div>
               <span className="font-playfair text-2xl font-bold text-amber-400" data-testid="footer-logo">
-                WhiskyVault
+                The Dram Journal
               </span>
             </div>
             <p className="text-gray-400" data-testid="footer-description">
@@ -75,7 +75,7 @@ export default function Footer() {
         
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400" data-testid="footer-copyright">
-            © 2024 WhiskyVault. All rights reserved.
+            © 2024 The Dram Journal. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="text-gray-400 hover:text-amber-400 transition-colors" data-testid="social-twitter">

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'whiskyvault-v1';
+const CACHE_NAME = 'dramjournal-v1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -96,6 +96,6 @@ self.addEventListener('push', (event) => {
   };
   
   event.waitUntil(
-    self.registration.showNotification('WhiskyVault', options)
+    self.registration.showNotification('The Dram Journal', options)
   );
 });

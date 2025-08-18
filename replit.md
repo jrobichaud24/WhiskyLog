@@ -1,6 +1,6 @@
 # Overview
 
-WhiskyVault is a Progressive Web Application (PWA) designed for whisky enthusiasts to track, rate, and discover exceptional single malt scotch whiskies. The application allows users to build personal collections, write detailed tasting notes, rate whiskies, and connect with fellow enthusiasts through a community-driven platform.
+The Dram Journal is a Progressive Web Application (PWA) designed for whisky enthusiasts to track, rate, and discover exceptional single malt scotch whiskies. The application allows users to build personal collections, write detailed tasting notes, rate whiskies, and connect with fellow enthusiasts through a community-driven platform. The application will be hosted at www.thedramjournal.com.
 
 The app is built as a full-stack TypeScript application with a React frontend and Express backend, designed to work both online and offline with PWA capabilities.
 
