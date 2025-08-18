@@ -37,10 +37,12 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           <div data-testid="footer-brand">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 whisky-gradient rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 2C6.45 2 6 2.45 6 3V4H5C4.45 4 4 4.45 4 5S4.45 6 5 6H6V19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V6H19C19.55 6 20 5.55 20 5S19.55 4 19 4H18V3C18 2.45 17.55 2 17 2H7ZM8 4H16V6H8V4ZM8 8H16V19H8V8Z"/>
-                </svg>
+              <div className="w-10 h-10 rounded-lg overflow-hidden">
+                <img 
+                  src="@assets/ChatGPT Image Aug 18, 2025, 02_49_36 PM_1755550197245.png" 
+                  alt="The Dram Journal Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="font-playfair text-2xl font-bold text-amber-400" data-testid="footer-logo">
                 The Dram Journal
