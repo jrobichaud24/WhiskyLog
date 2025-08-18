@@ -1,7 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWhiskySchema, insertUserWhiskySchema, insertUserSchema } from "@shared/schema";
+import { 
+  insertWhiskySchema, 
+  insertUserWhiskySchema, 
+  insertUserSchema,
+  insertDistillerySchema,
+  insertProductSchema,
+  bulkDistillerySchema,
+  bulkProductSchema
+} from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
@@ -213,6 +221,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid user whisky data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create user whisky" });
+    }
+  });
+
+  // Distillery routes
+  app.get("/api/distilleries", async (req, res) => {
+    try {
+      const distilleries = await storage.getDistilleries();
+      res.json(distilleries);
+    } catch (error) {
+      console.error("Get distilleries error:", error);
+      res.status(500).json({ message: "Failed to fetch distilleries" });
+    }
+  });
+
+  app.get("/api/distilleries/:id", async (req, res) => {
+    try {
+      const distillery = await storage.getDistillery(req.params.id);
+      if (!distillery) {
+        return res.status(404).json({ message: "Distillery not found" });
+      }
+      res.json(distillery);
+    } catch (error) {
+      console.error("Get distillery error:", error);
+      res.status(500).json({ message: "Failed to fetch distillery" });
+    }
+  });
+
+  app.post("/api/distilleries", async (req, res) => {
+    try {
+      const validatedData = insertDistillerySchema.parse(req.body);
+      const distillery = await storage.createDistillery(validatedData);
+      res.status(201).json(distillery);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid distillery data", errors: error.errors });
+      }
+      console.error("Create distillery error:", error);
+      res.status(500).json({ message: "Failed to create distillery" });
+    }
+  });
+
+  // Bulk import distilleries from spreadsheet
+  app.post("/api/distilleries/bulk", async (req, res) => {
+    try {
+      const validatedData = bulkDistillerySchema.parse(req.body);
+      const distilleries = await storage.bulkCreateDistilleries(validatedData);
+      res.status(201).json({
+        message: `Successfully imported ${distilleries.length} distilleries`,
+        distilleries
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid distillery data", 
+          errors: error.errors 
+        });
+      }
+      console.error("Bulk create distilleries error:", error);
+      res.status(500).json({ message: "Failed to import distilleries" });
+    }
+  });
+
+  // Product routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Get products error:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const product = await storage.getProduct(req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json(product);
+    } catch (error) {
+      console.error("Get product error:", error);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  app.get("/api/distilleries/:distilleryId/products", async (req, res) => {
+    try {
+      const products = await storage.getProductsByDistillery(req.params.distilleryId);
+      res.json(products);
+    } catch (error) {
+      console.error("Get products by distillery error:", error);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const validatedData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(validatedData);
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid product data", errors: error.errors });
+      }
+      console.error("Create product error:", error);
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+
+  // Bulk import products from spreadsheet
+  app.post("/api/products/bulk", async (req, res) => {
+    try {
+      const validatedData = bulkProductSchema.parse(req.body);
+      const products = await storage.bulkCreateProducts(validatedData);
+      res.status(201).json({
+        message: `Successfully imported ${products.length} products`,
+        products
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid product data", 
+          errors: error.errors 
+        });
+      }
+      console.error("Bulk create products error:", error);
+      res.status(500).json({ message: "Failed to import products" });
     }
   });
 

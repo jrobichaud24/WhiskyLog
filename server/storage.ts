@@ -1,21 +1,44 @@
-import { type User, type InsertUser, type Whisky, type InsertWhisky, type UserWhisky, type InsertUserWhisky } from "@shared/schema";
+import { 
+  type User, type InsertUser, 
+  type Whisky, type InsertWhisky, 
+  type UserWhisky, type InsertUserWhisky,
+  type Distillery, type InsertDistillery,
+  type Product, type InsertProduct
+} from "@shared/schema";
 import { db } from "./db";
-import { users, whiskies, userWhiskies } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, whiskies, userWhiskies, distilleries, products } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   
+  // Distillery operations
+  getDistilleries(): Promise<Distillery[]>;
+  getDistillery(id: string): Promise<Distillery | undefined>;
+  getDistilleryByName(name: string): Promise<Distillery | undefined>;
+  createDistillery(distillery: InsertDistillery): Promise<Distillery>;
+  bulkCreateDistilleries(distilleries: InsertDistillery[]): Promise<Distillery[]>;
+  
+  // Product operations
+  getProducts(): Promise<Product[]>;
+  getProduct(id: string): Promise<Product | undefined>;
+  getProductsByDistillery(distilleryId: string): Promise<Product[]>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  bulkCreateProducts(products: InsertProduct[]): Promise<Product[]>;
+  
+  // Legacy whisky operations (for backward compatibility)
   getWhiskies(): Promise<Whisky[]>;
   getWhisky(id: string): Promise<Whisky | undefined>;
   createWhisky(whisky: InsertWhisky): Promise<Whisky>;
   
+  // User whisky operations
   getUserWhiskies(userId: string): Promise<UserWhisky[]>;
   getUserWhisky(userId: string, whiskyId: string): Promise<UserWhisky | undefined>;
   createUserWhisky(userWhisky: InsertUserWhisky): Promise<UserWhisky>;
@@ -23,6 +46,68 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Distillery operations
+  async getDistilleries(): Promise<Distillery[]> {
+    return await db.select().from(distilleries);
+  }
+
+  async getDistillery(id: string): Promise<Distillery | undefined> {
+    const [distillery] = await db.select().from(distilleries).where(eq(distilleries.id, id));
+    return distillery || undefined;
+  }
+
+  async getDistilleryByName(name: string): Promise<Distillery | undefined> {
+    const [distillery] = await db.select().from(distilleries).where(eq(distilleries.name, name));
+    return distillery || undefined;
+  }
+
+  async createDistillery(insertDistillery: InsertDistillery): Promise<Distillery> {
+    const [distillery] = await db
+      .insert(distilleries)
+      .values(insertDistillery)
+      .returning();
+    return distillery;
+  }
+
+  async bulkCreateDistilleries(insertDistilleries: InsertDistillery[]): Promise<Distillery[]> {
+    const result = await db
+      .insert(distilleries)
+      .values(insertDistilleries)
+      .returning();
+    return result;
+  }
+
+  // Product operations
+  async getProducts(): Promise<Product[]> {
+    return await db.select().from(products);
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async getProductsByDistillery(distilleryId: string): Promise<Product[]> {
+    return await db.select().from(products).where(eq(products.distilleryId, distilleryId));
+  }
+
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const [product] = await db
+      .insert(products)
+      .values(insertProduct)
+      .returning();
+    return product;
+  }
+
+  async bulkCreateProducts(insertProducts: InsertProduct[]): Promise<Product[]> {
+    const result = await db
+      .insert(products)
+      .values(insertProducts)
+      .returning();
+    return result;
+  }
+
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -90,8 +175,7 @@ export class DatabaseStorage implements IStorage {
     const [userWhisky] = await db
       .select()
       .from(userWhiskies)
-      .where(eq(userWhiskies.userId, userId))
-      .where(eq(userWhiskies.whiskyId, whiskyId));
+      .where(and(eq(userWhiskies.userId, userId), eq(userWhiskies.whiskyId, whiskyId)));
     return userWhisky || undefined;
   }
 
@@ -235,9 +319,109 @@ export class MemStorage implements IStorage {
       ...insertWhisky,
       id,
       createdAt: new Date(),
+      age: insertWhisky.age || null,
+      abv: insertWhisky.abv || null,
+      description: insertWhisky.description || null,
+      imageUrl: insertWhisky.imageUrl || null,
     };
     this.whiskies.set(id, whisky);
     return whisky;
+  }
+
+  // Distillery operations
+  async getDistilleries(): Promise<Distillery[]> {
+    return [];
+  }
+
+  async getDistillery(id: string): Promise<Distillery | undefined> {
+    return undefined;
+  }
+
+  async getDistilleryByName(name: string): Promise<Distillery | undefined> {
+    return undefined;
+  }
+
+  async createDistillery(insertDistillery: InsertDistillery): Promise<Distillery> {
+    const id = randomUUID();
+    const distillery: Distillery = {
+      ...insertDistillery,
+      id,
+      createdAt: new Date(),
+      status: insertDistillery.status || "active",
+      country: insertDistillery.country || "Scotland",
+      founded: insertDistillery.founded || null,
+      website: insertDistillery.website || null,
+      description: insertDistillery.description || null,
+      imageUrl: insertDistillery.imageUrl || null,
+    };
+    return distillery;
+  }
+
+  async bulkCreateDistilleries(distilleries: InsertDistillery[]): Promise<Distillery[]> {
+    return distilleries.map(d => ({ 
+      ...d, 
+      id: randomUUID(), 
+      createdAt: new Date(),
+      status: d.status || "active",
+      country: d.country || "Scotland", 
+      founded: d.founded || null,
+      website: d.website || null,
+      description: d.description || null,
+      imageUrl: d.imageUrl || null,
+    }));
+  }
+
+  // Product operations
+  async getProducts(): Promise<Product[]> {
+    return [];
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    return undefined;
+  }
+
+  async getProductsByDistillery(distilleryId: string): Promise<Product[]> {
+    return [];
+  }
+
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const id = randomUUID();
+    const product: Product = {
+      ...insertProduct,
+      id,
+      createdAt: new Date(),
+      age: insertProduct.age || null,
+      caskType: insertProduct.caskType || null,
+      bottler: insertProduct.bottler || null,
+      vintage: insertProduct.vintage || null,
+      bottled: insertProduct.bottled || null,
+      limitedEdition: insertProduct.limitedEdition || false,
+      description: insertProduct.description || null,
+      tastingNotes: insertProduct.tastingNotes || null,
+      imageUrl: insertProduct.imageUrl || null,
+      price: insertProduct.price || null,
+      availability: insertProduct.availability || "available",
+    };
+    return product;
+  }
+
+  async bulkCreateProducts(products: InsertProduct[]): Promise<Product[]> {
+    return products.map(p => ({ 
+      ...p, 
+      id: randomUUID(), 
+      createdAt: new Date(),
+      age: p.age || null,
+      caskType: p.caskType || null,
+      bottler: p.bottler || null,
+      vintage: p.vintage || null,
+      bottled: p.bottled || null,
+      limitedEdition: p.limitedEdition || false,
+      description: p.description || null,
+      tastingNotes: p.tastingNotes || null,
+      imageUrl: p.imageUrl || null,
+      price: p.price || null,
+      availability: p.availability || "available",
+    }));
   }
 
   async getUserWhiskies(userId: string): Promise<UserWhisky[]> {
@@ -258,6 +442,10 @@ export class MemStorage implements IStorage {
       ...insertUserWhisky,
       id,
       createdAt: new Date(),
+      rating: insertUserWhisky.rating || null,
+      tastingNotes: insertUserWhisky.tastingNotes || null,
+      owned: insertUserWhisky.owned || false,
+      wishlist: insertUserWhisky.wishlist || false,
     };
     this.userWhiskies.set(id, userWhisky);
     return userWhisky;
