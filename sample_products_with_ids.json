@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Lagavulin 16 Year Old",
+    "distilleryId": "9d36a081-f9bf-41e8-a7a4-5562dd32f0c4",
+    "age": 16,
+    "abv": "43.0",
+    "caskType": "Oak",
+    "description": "A much sought-after single malt with the massive peat-smoke that's typical of southern Islay.",
+    "price": "89.99",
+    "availability": "available"
+  },
+  {
+    "name": "Ardbeg 10 Year Old",
+    "distilleryId": "0e6ec2da-d630-4140-baae-be631fd7ff82", 
+    "age": 10,
+    "abv": "46.0",
+    "caskType": "Bourbon",
+    "description": "The ultimate Islay single malt Scotch whisky, revered for its phenomenal intensity.",
+    "price": "59.99",
+    "availability": "available"
+  },
+  {
+    "name": "Balvenie 12 Year Old DoubleWood",
+    "distilleryId": "2c7ee6fc-7012-4608-b258-68a0d84ead5a",
+    "age": 12,
+    "abv": "40.0", 
+    "caskType": "Sherry",
+    "description": "Matured in two distinct wood types, offering layers of complex flavor.",
+    "price": "54.99",
+    "availability": "available"
+  },
+  {
+    "name": "Highland Park 18 Year Old Viking Pride",
+    "distilleryId": "39f3f088-1410-4a78-95e6-cdf994f5d211",
+    "age": 18,
+    "abv": "43.0",
+    "caskType": "Sherry",
+    "description": "Perfectly balanced single malt with gentle smoke and rich sherry influence.",
+    "price": "299.99",
+    "availability": "limited"
+  },
+  {
+    "name": "Talisker 10 Year Old",
+    "distilleryId": "fdbd51b9-2ba7-47ea-9599-380c8a212f83",
+    "age": 10,
+    "abv": "45.8",
+    "caskType": "Oak",
+    "description": "A powerful single malt with a distinctive peppery finish and maritime character.",
+    "price": "64.99",
+    "availability": "available"
+  }
+]

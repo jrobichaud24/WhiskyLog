@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Lagavulin",
+    "region": "Islay", 
+    "country": "Scotland",
+    "founded": 1816,
+    "status": "active",
+    "description": "Known for its intensely smoky and peaty single malt whiskies, Lagavulin is one of Islay's most famous distilleries.",
+    "website": "https://www.lagavulin.com"
+  },
+  {
+    "name": "Ardbeg",
+    "region": "Islay",
+    "country": "Scotland", 
+    "founded": 1815,
+    "status": "active",
+    "description": "Produces some of the peatiest, smokiest, most complex single malt whiskies in the world.",
+    "website": "https://www.ardbeg.com"
+  },
+  {
+    "name": "Balvenie", 
+    "region": "Speyside",
+    "country": "Scotland",
+    "founded": 1892,
+    "status": "active",
+    "description": "Traditional Speyside distillery known for its handcrafted approach and honey-influenced whiskies."
+  },
+  {
+    "name": "Highland Park",
+    "region": "Islands",
+    "country": "Scotland",
+    "founded": 1798, 
+    "status": "active",
+    "description": "The most northerly Scottish distillery, producing balanced single malts with subtle smoke."
+  },
+  {
+    "name": "Talisker",
+    "region": "Islands",
+    "country": "Scotland",
+    "founded": 1830,
+    "status": "active", 
+    "description": "The only single malt Scotch whisky from the Isle of Skye, known for its maritime character."
+  }
+]
