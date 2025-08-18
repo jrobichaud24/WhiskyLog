@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Star, Plus, BookOpen } from "lucide-react";
+import { LogOut, Star, Plus, BookOpen, Settings } from "lucide-react";
 import type { User, Whisky } from "@shared/schema";
 
 export default function Dashboard() {
@@ -241,6 +241,28 @@ export default function Dashboard() {
                 <p className="text-slate-600">Our whisky experts are carefully curating an exceptional selection of single malts for you to discover.</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Admin Navigation */}
+        <Card className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-xl border-0 mt-8">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Database Management</h3>
+                  <p className="text-slate-300 text-sm">Manage distilleries and products</p>
+                </div>
+              </div>
+              <a href="/admin">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Open Admin Panel
+                </Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
       </main>
