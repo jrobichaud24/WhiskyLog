@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,20 +9,94 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe } from "lucide-react";
+import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X } from "lucide-react";
 import type { Distillery, Product } from "@shared/schema";
+
+// CSV to JSON conversion utility
+function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): any[] {
+  const lines = csvText.trim().split('\n');
+  if (lines.length < 2) {
+    throw new Error('CSV must have at least a header row and one data row');
+  }
+
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  const data = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    if (values.length !== headers.length) {
+      console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Skipping.`);
+      continue;
+    }
+
+    const row: any = {};
+    headers.forEach((header, index) => {
+      const value = values[index].trim();
+      
+      // Convert common field types
+      if (type === 'distilleries') {
+        if (header === 'founded' && value) {
+          row[header] = parseInt(value) || null;
+        } else if (header === 'status' && !value) {
+          row[header] = 'active';
+        } else if (header === 'country' && !value) {
+          row[header] = 'Scotland';
+        } else {
+          row[header] = value || null;
+        }
+      } else if (type === 'products') {
+        if (header === 'age' && value) {
+          row[header] = parseInt(value) || null;
+        } else if (header === 'limitedEdition') {
+          row[header] = value.toLowerCase() === 'true' || value === '1';
+        } else if (header === 'availability' && !value) {
+          row[header] = 'available';
+        } else {
+          row[header] = value || null;
+        }
+      }
+    });
+
+    data.push(row);
+  }
+
+  return data;
+}
+
+// Parse CSV line respecting quoted fields
+function parseCSVLine(line: string): string[] {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  result.push(current);
+  return result.map(field => field.replace(/^"|"$/g, ''));
+}
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("distilleries");
 
   // Fetch distilleries
-  const { data: distilleries = [], isLoading: distilleriesLoading } = useQuery({
+  const { data: distilleries = [], isLoading: distilleriesLoading } = useQuery<Distillery[]>({
     queryKey: ["/api/distilleries"],
   });
 
   // Fetch products
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
@@ -92,6 +166,8 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkData, setBulkData] = useState("");
+  const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Bulk import mutation
   const bulkImportMutation = useMutation({
@@ -135,6 +211,43 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      try {
+        if (file.name.endsWith('.csv')) {
+          const jsonData = convertCSVToJSON(text, 'distilleries');
+          setBulkData(JSON.stringify(jsonData, null, 2));
+          setImportMethod("csv");
+        } else if (file.name.endsWith('.json')) {
+          setBulkData(text);
+          setImportMethod("json");
+        } else {
+          throw new Error("Please upload a CSV or JSON file");
+        }
+        toast({
+          title: "File uploaded successfully",
+          description: `Converted ${file.name} to JSON format`,
+        });
+      } catch (error) {
+        toast({
+          title: "File conversion failed",
+          description: error instanceof Error ? error.message : "Failed to process file",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-6">
       {/* Actions */}
@@ -170,17 +283,99 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           <CardHeader>
             <CardTitle>Bulk Import Distilleries</CardTitle>
             <CardDescription>
-              Paste JSON array of distillery objects. Required fields: name, region
+              Upload a CSV file or paste JSON data. Required fields: name, region
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              value={bulkData}
-              onChange={(e) => setBulkData(e.target.value)}
-              placeholder='[{"name":"Macallan","region":"Speyside","country":"Scotland","founded":1824,"description":"Famous distillery"}]'
-              className="min-h-32"
-              data-testid="textarea-bulk-import"
-            />
+          <CardContent className="space-y-6">
+            {/* Import Method Selection */}
+            <div className="flex items-center space-x-4">
+              <Label className="text-sm font-medium">Import Method:</Label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="json-import"
+                    name="import-method"
+                    checked={importMethod === "json"}
+                    onChange={() => setImportMethod("json")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="json-import" className="text-sm">JSON Text</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="csv-import"
+                    name="import-method"
+                    checked={importMethod === "csv"}
+                    onChange={() => setImportMethod("csv")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="csv-import" className="text-sm">CSV File</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* CSV Upload Section */}
+            {importMethod === "csv" && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center bg-amber-50/50">
+                  <FileSpreadsheet className="h-12 w-12 text-amber-600 mx-auto mb-3" />
+                  <p className="text-slate-700 mb-4">
+                    Upload a CSV file with distillery data
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    CSV headers: name, region, country, founded, status, website, description
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.json"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-file-upload"
+                  />
+                  <Button
+                    onClick={triggerFileUpload}
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    data-testid="button-upload-file"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose CSV File
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* JSON Text Area */}
+            {importMethod === "json" && (
+              <div className="space-y-2">
+                <Label htmlFor="json-data">JSON Data</Label>
+                <Textarea
+                  id="json-data"
+                  value={bulkData}
+                  onChange={(e) => setBulkData(e.target.value)}
+                  placeholder='[{"name":"Macallan","region":"Speyside","country":"Scotland","founded":1824,"description":"Famous distillery"}]'
+                  className="min-h-32 font-mono text-sm"
+                  data-testid="textarea-bulk-import"
+                />
+              </div>
+            )}
+
+            {/* Preview converted data */}
+            {bulkData && (
+              <div className="space-y-2">
+                <Label>Data Preview</Label>
+                <div className="bg-slate-100 rounded-lg p-4 max-h-40 overflow-y-auto">
+                  <pre className="text-xs text-slate-700 whitespace-pre-wrap">
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).substring(0, 500)}
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).length > 500 && '...'}
+                  </pre>
+                </div>
+              </div>
+            )}
+
             <div className="flex space-x-3">
               <Button
                 onClick={handleBulkImport}
@@ -188,11 +383,15 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                 className="bg-amber-500 hover:bg-amber-600"
                 data-testid="button-execute-bulk-import"
               >
-                {bulkImportMutation.isPending ? "Importing..." : "Import"}
+                {bulkImportMutation.isPending ? "Importing..." : "Import Data"}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowBulkImport(false)}
+                onClick={() => {
+                  setShowBulkImport(false);
+                  setBulkData("");
+                  setImportMethod("json");
+                }}
                 data-testid="button-cancel-bulk-import"
               >
                 Cancel
@@ -287,6 +486,8 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [bulkData, setBulkData] = useState("");
+  const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Bulk import mutation
   const bulkImportMutation = useMutation({
@@ -330,6 +531,43 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      try {
+        if (file.name.endsWith('.csv')) {
+          const jsonData = convertCSVToJSON(text, 'products');
+          setBulkData(JSON.stringify(jsonData, null, 2));
+          setImportMethod("csv");
+        } else if (file.name.endsWith('.json')) {
+          setBulkData(text);
+          setImportMethod("json");
+        } else {
+          throw new Error("Please upload a CSV or JSON file");
+        }
+        toast({
+          title: "File uploaded successfully",
+          description: `Converted ${file.name} to JSON format`,
+        });
+      } catch (error) {
+        toast({
+          title: "File conversion failed",
+          description: error instanceof Error ? error.message : "Failed to process file",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   // Get distillery name by ID
   const getDistilleryName = (distilleryId: string) => {
     const distillery = distilleries.find(d => d.id === distilleryId);
@@ -371,17 +609,116 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
           <CardHeader>
             <CardTitle>Bulk Import Products</CardTitle>
             <CardDescription>
-              Paste JSON array of product objects. Required fields: name, distilleryId, abv
+              Upload a CSV file or paste JSON data. Required fields: name, distilleryId, abv
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              value={bulkData}
-              onChange={(e) => setBulkData(e.target.value)}
-              placeholder='[{"name":"Macallan 18","distilleryId":"distillery-id","age":18,"abv":"43.0","description":"Premium whisky"}]'
-              className="min-h-32"
-              data-testid="textarea-bulk-import-products"
-            />
+          <CardContent className="space-y-6">
+            {/* Import Method Selection */}
+            <div className="flex items-center space-x-4">
+              <Label className="text-sm font-medium">Import Method:</Label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="json-import-products"
+                    name="import-method-products"
+                    checked={importMethod === "json"}
+                    onChange={() => setImportMethod("json")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="json-import-products" className="text-sm">JSON Text</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="csv-import-products"
+                    name="import-method-products"
+                    checked={importMethod === "csv"}
+                    onChange={() => setImportMethod("csv")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="csv-import-products" className="text-sm">CSV File</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* CSV Upload Section */}
+            {importMethod === "csv" && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center bg-amber-50/50">
+                  <FileSpreadsheet className="h-12 w-12 text-amber-600 mx-auto mb-3" />
+                  <p className="text-slate-700 mb-4">
+                    Upload a CSV file with product data
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    CSV headers: name, distilleryId, age, abv, caskType, price, description, availability
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.json"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-file-upload-products"
+                  />
+                  <Button
+                    onClick={triggerFileUpload}
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    data-testid="button-upload-file-products"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose CSV File
+                  </Button>
+                </div>
+
+                {/* Distillery ID Helper */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 mb-2">Available Distillery IDs:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {distilleries.slice(0, 6).map((distillery) => (
+                      <div key={distillery.id} className="text-blue-700">
+                        <code className="bg-blue-100 px-1 rounded">{distillery.id.substring(0, 8)}...</code> = {distillery.name}
+                      </div>
+                    ))}
+                    {distilleries.length > 6 && (
+                      <div className="text-blue-600 text-xs col-span-2">
+                        ... and {distilleries.length - 6} more. Check the Distilleries tab for full IDs.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* JSON Text Area */}
+            {importMethod === "json" && (
+              <div className="space-y-2">
+                <Label htmlFor="json-data-products">JSON Data</Label>
+                <Textarea
+                  id="json-data-products"
+                  value={bulkData}
+                  onChange={(e) => setBulkData(e.target.value)}
+                  placeholder='[{"name":"Macallan 18","distilleryId":"distillery-id","age":18,"abv":"43.0","description":"Premium whisky"}]'
+                  className="min-h-32 font-mono text-sm"
+                  data-testid="textarea-bulk-import-products"
+                />
+              </div>
+            )}
+
+            {/* Preview converted data */}
+            {bulkData && (
+              <div className="space-y-2">
+                <Label>Data Preview</Label>
+                <div className="bg-slate-100 rounded-lg p-4 max-h-40 overflow-y-auto">
+                  <pre className="text-xs text-slate-700 whitespace-pre-wrap">
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).substring(0, 500)}
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).length > 500 && '...'}
+                  </pre>
+                </div>
+              </div>
+            )}
+
             <div className="flex space-x-3">
               <Button
                 onClick={handleBulkImport}
@@ -389,11 +726,15 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
                 className="bg-amber-500 hover:bg-amber-600"
                 data-testid="button-execute-bulk-import-products"
               >
-                {bulkImportMutation.isPending ? "Importing..." : "Import"}
+                {bulkImportMutation.isPending ? "Importing..." : "Import Data"}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowBulkImport(false)}
+                onClick={() => {
+                  setShowBulkImport(false);
+                  setBulkData("");
+                  setImportMethod("json");
+                }}
                 data-testid="button-cancel-bulk-import-products"
               >
                 Cancel
