@@ -126,18 +126,14 @@ export default function Login() {
             </form>
 
             <div className="mt-6 text-center space-y-4">
-              <Link href="/reset-password">
-                <a className="text-sm text-amber-600 hover:text-amber-700" data-testid="link-reset-password">
-                  Forgot your password?
-                </a>
+              <Link href="/reset-password" className="text-sm text-amber-600 hover:text-amber-700" data-testid="link-reset-password">
+                Forgot your password?
               </Link>
               
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
-                <Link href="/signup">
-                  <a className="text-amber-600 hover:text-amber-700 font-medium" data-testid="link-signup">
-                    Sign up
-                  </a>
+                <Link href="/signup" className="text-amber-600 hover:text-amber-700 font-medium" data-testid="link-signup">
+                  Sign up
                 </Link>
               </p>
             </div>

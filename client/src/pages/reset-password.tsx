@@ -222,10 +222,8 @@ export default function ResetPassword() {
             )}
 
             <div className="mt-6 text-center">
-              <Link href="/login">
-                <a className="text-sm text-amber-600 hover:text-amber-700" data-testid="link-back-to-login">
-                  Back to Sign In
-                </a>
+              <Link href="/login" className="text-sm text-amber-600 hover:text-amber-700" data-testid="link-back-to-login">
+                Back to Sign In
               </Link>
             </div>
           </CardContent>

@@ -8,6 +8,18 @@ The app is built as a full-stack TypeScript application with a React frontend an
 
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes
+
+## Authentication System Implementation (August 18, 2025)
+- Implemented complete user authentication system with PostgreSQL database
+- Created signup, login, password reset, and dashboard pages
+- Fixed API request function to properly handle POST requests with JSON bodies
+- Added session-based authentication with secure cookie handling
+- Integrated custom logo assets provided by user
+- Connected navigation "Get Started" buttons to signup flow
+- Database schema includes users table with username, email, password (hashed), and timestamps
+- All authentication pages feature Scottish Highland theme with amber/gold branding
+
 # System Architecture
 
 ## Frontend Architecture
