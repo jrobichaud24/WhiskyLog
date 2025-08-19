@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X } from "lucide-react";
+import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Distillery, Product } from "@shared/schema";
 
 // CSV to JSON conversion utility
@@ -192,6 +193,24 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
   const [bulkData, setBulkData] = useState("");
   const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Filter states
+  const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [filterCountry, setFilterCountry] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // Get unique values for filter options
+  const uniqueRegions = Array.from(new Set(distilleries.map(d => d.region).filter(Boolean))).sort();
+  const uniqueCountries = Array.from(new Set(distilleries.map(d => d.country).filter(Boolean))).sort();
+  const uniqueStatuses = Array.from(new Set(distilleries.map(d => d.status).filter(Boolean))).sort();
+
+  // Filter distilleries based on selected filters
+  const filteredDistilleries = distilleries.filter(distillery => {
+    if (filterRegion !== "all" && distillery.region !== filterRegion) return false;
+    if (filterCountry !== "all" && distillery.country !== filterCountry) return false;
+    if (filterStatus !== "all" && distillery.status !== filterStatus) return false;
+    return true;
+  });
 
   // Bulk import mutation
   const bulkImportMutation = useMutation({
@@ -430,6 +449,98 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
         <AddDistilleryForm onSuccess={() => setShowAddForm(false)} />
       )}
 
+      {/* Filter Controls */}
+      <Card className="bg-white/90 backdrop-blur-sm border-amber-100 mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-amber-600" />
+            <CardTitle className="text-lg text-slate-800">Filter Distilleries</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="region-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Region
+              </Label>
+              <Select value={filterRegion} onValueChange={setFilterRegion}>
+                <SelectTrigger data-testid="select-region-filter">
+                  <SelectValue placeholder="All regions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {uniqueRegions.map((region) => (
+                    <SelectItem key={region} value={region}>
+                      {region}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="country-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Country
+              </Label>
+              <Select value={filterCountry} onValueChange={setFilterCountry}>
+                <SelectTrigger data-testid="select-country-filter">
+                  <SelectValue placeholder="All countries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {uniqueCountries.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="status-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Status
+              </Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger data-testid="select-status-filter">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Filter Results Summary */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200">
+            <div className="text-sm text-slate-600">
+              Showing {filteredDistilleries.length} of {distilleries.length} distilleries
+            </div>
+            {(filterRegion !== "all" || filterCountry !== "all" || filterStatus !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterRegion("all");
+                  setFilterCountry("all");
+                  setFilterStatus("all");
+                }}
+                className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                data-testid="button-clear-filters"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Distilleries List */}
       <Card className="bg-white/90 backdrop-blur-sm border-amber-100">
         <CardContent className="p-0">
@@ -448,9 +559,9 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                 </div>
               ))}
             </div>
-          ) : distilleries.length > 0 ? (
+          ) : filteredDistilleries.length > 0 ? (
             <div className="max-h-[500px] overflow-y-auto">
-              {distilleries
+              {filteredDistilleries
                 .sort((a, b) => {
                   // First sort by region
                   if (a.region !== b.region) {
@@ -530,6 +641,12 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                     </div>
                   );
                 })}
+            </div>
+          ) : distilleries.length > 0 ? (
+            <div className="text-center py-12">
+              <Filter className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Matching Distilleries</h3>
+              <p className="text-slate-500">Try adjusting your filters to see more results</p>
             </div>
           ) : (
             <div className="text-center py-12">
