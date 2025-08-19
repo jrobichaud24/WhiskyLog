@@ -68,22 +68,38 @@ function parseCSVLine(line: string): string[] {
   const result = [];
   let current = '';
   let inQuotes = false;
+  let i = 0;
   
-  for (let i = 0; i < line.length; i++) {
+  while (i < line.length) {
     const char = line[i];
     
     if (char === '"') {
+      // Handle escaped quotes
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 2; // Skip both quotes
+        continue;
+      }
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
-      result.push(current);
+      result.push(current.trim());
       current = '';
+      i++;
+      continue;
     } else {
       current += char;
     }
+    i++;
   }
   
-  result.push(current);
-  return result.map(field => field.replace(/^"|"$/g, ''));
+  result.push(current.trim());
+  return result.map(field => {
+    // Remove surrounding quotes
+    if (field.startsWith('"') && field.endsWith('"')) {
+      return field.slice(1, -1);
+    }
+    return field;
+  });
 }
 
 export default function AdminPage() {
