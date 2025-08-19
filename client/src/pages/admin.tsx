@@ -14,18 +14,24 @@ import type { Distillery, Product } from "@shared/schema";
 
 // CSV to JSON conversion utility
 function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): any[] {
+  console.log('Converting CSV text:', csvText.substring(0, 200) + '...');
   const lines = csvText.trim().split('\n');
+  console.log('CSV lines:', lines);
+  
   if (lines.length < 2) {
     throw new Error('CSV must have at least a header row and one data row');
   }
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  const headers = parseCSVLine(lines[0]).map(h => h.trim());
+  console.log('CSV headers:', headers);
   const data = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
+    console.log(`Row ${i + 1} values:`, values);
+    
     if (values.length !== headers.length) {
-      console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Skipping.`);
+      console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Row data:`, values);
       continue;
     }
 
@@ -37,10 +43,10 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
       if (type === 'distilleries') {
         if (header === 'founded' && value) {
           row[header] = parseInt(value) || null;
-        } else if (header === 'status' && !value) {
-          row[header] = 'active';
-        } else if (header === 'country' && !value) {
-          row[header] = 'Scotland';
+        } else if (header === 'status') {
+          row[header] = value || 'active';
+        } else if (header === 'country') {
+          row[header] = value || 'Scotland';
         } else {
           row[header] = value || null;
         }
@@ -49,17 +55,19 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           row[header] = parseInt(value) || null;
         } else if (header === 'limitedEdition') {
           row[header] = value.toLowerCase() === 'true' || value === '1';
-        } else if (header === 'availability' && !value) {
-          row[header] = 'available';
+        } else if (header === 'availability') {
+          row[header] = value || 'available';
         } else {
           row[header] = value || null;
         }
       }
     });
 
+    console.log('Converted row:', row);
     data.push(row);
   }
 
+  console.log('Final converted data:', data);
   return data;
 }
 

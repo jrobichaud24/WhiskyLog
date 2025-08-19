@@ -265,7 +265,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk import distilleries from spreadsheet
   app.post("/api/distilleries/bulk", async (req, res) => {
     try {
+      console.log("Raw request body:", req.body);
+      console.log("Body type:", typeof req.body);
+      console.log("Body length:", Array.isArray(req.body) ? req.body.length : 'not array');
+      
+      if (!Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Expected an array of distilleries" });
+      }
+
+      if (req.body.length === 0) {
+        return res.status(400).json({ message: "Cannot import empty array" });
+      }
+
       const validatedData = bulkDistillerySchema.parse(req.body);
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
+      
       const distilleries = await storage.bulkCreateDistilleries(validatedData);
       res.status(201).json({
         message: `Successfully imported ${distilleries.length} distilleries`,
@@ -273,6 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         return res.status(400).json({ 
           message: "Invalid distillery data", 
           errors: error.errors 
