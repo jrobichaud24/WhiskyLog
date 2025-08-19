@@ -450,61 +450,86 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
             </div>
           ) : distilleries.length > 0 ? (
             <div className="max-h-[500px] overflow-y-auto">
-              {distilleries.map((distillery, index) => (
-                <div 
-                  key={distillery.id} 
-                  className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${
-                    index < distilleries.length - 1 ? 'border-b border-slate-100' : ''
-                  }`}
-                  data-testid={`row-distillery-${distillery.id}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-distillery-name-${distillery.id}`}>
-                          {distillery.name}
-                        </h3>
-                        <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-3 w-3" />
-                            <span data-testid={`text-distillery-region-${distillery.id}`}>{distillery.region}</span>
-                          </div>
-                          {distillery.founded && (
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{distillery.founded}</span>
-                            </div>
-                          )}
-                          {distillery.website && (
-                            <div className="flex items-center space-x-1">
-                              <Globe className="h-3 w-3" />
-                              <a href={distillery.website} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
-                                Website
-                              </a>
-                            </div>
-                          )}
+              {distilleries
+                .sort((a, b) => {
+                  // First sort by region
+                  if (a.region !== b.region) {
+                    return a.region.localeCompare(b.region);
+                  }
+                  // Then sort by name within the same region
+                  return a.name.localeCompare(b.name);
+                })
+                .map((distillery, index, sortedArray) => {
+                  // Check if this is the first distillery in a new region
+                  const isFirstInRegion = index === 0 || sortedArray[index - 1].region !== distillery.region;
+                  
+                  return (
+                    <div key={distillery.id}>
+                      {/* Region Header */}
+                      {isFirstInRegion && (
+                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                          <h4 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">
+                            {distillery.region}
+                          </h4>
                         </div>
-                        {distillery.description && (
-                          <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-distillery-description-${distillery.id}`}>
-                            {distillery.description}
-                          </p>
-                        )}
+                      )}
+                      
+                      {/* Distillery Row */}
+                      <div 
+                        className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${
+                          index < sortedArray.length - 1 ? 'border-b border-slate-100' : ''
+                        }`}
+                        data-testid={`row-distillery-${distillery.id}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-distillery-name-${distillery.id}`}>
+                                {distillery.name}
+                              </h3>
+                              <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
+                                <div className="flex items-center space-x-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span data-testid={`text-distillery-region-${distillery.id}`}>{distillery.region}</span>
+                                </div>
+                                {distillery.founded && (
+                                  <div className="flex items-center space-x-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{distillery.founded}</span>
+                                  </div>
+                                )}
+                                {distillery.website && (
+                                  <div className="flex items-center space-x-1">
+                                    <Globe className="h-3 w-3" />
+                                    <a href={distillery.website} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                                      Website
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                              {distillery.description && (
+                                <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-distillery-description-${distillery.id}`}>
+                                  {distillery.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                            {distillery.country}
+                          </Badge>
+                          <Badge 
+                            variant={distillery.status === 'active' ? 'default' : 'secondary'}
+                            className={distillery.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}
+                          >
+                            {distillery.status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                      {distillery.country}
-                    </Badge>
-                    <Badge 
-                      variant={distillery.status === 'active' ? 'default' : 'secondary'}
-                      className={distillery.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}
-                    >
-                      {distillery.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           ) : (
             <div className="text-center py-12">
