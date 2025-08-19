@@ -449,7 +449,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
               ))}
             </div>
           ) : distilleries.length > 0 ? (
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[500px] overflow-y-auto">
               {distilleries.map((distillery, index) => (
                 <div 
                   key={distillery.id} 
@@ -460,7 +460,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-3">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-distillery-name-${distillery.id}`}>
                           {distillery.name}
                         </h3>
@@ -484,6 +484,11 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                             </div>
                           )}
                         </div>
+                        {distillery.description && (
+                          <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-distillery-description-${distillery.id}`}>
+                            {distillery.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
