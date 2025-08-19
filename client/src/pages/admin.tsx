@@ -52,8 +52,11 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
         } else if (header === 'country') {
           row[header] = value || 'Scotland';
         } else if (header === 'region') {
-          // Region is required, set a default if empty
+          // Region is required, ensure it's always a string
           row[header] = value || 'Highland';
+        } else if (header === 'name') {
+          // Name is required
+          row[header] = value || `Distillery ${i}`;
         } else {
           row[header] = value || null;
         }
@@ -69,6 +72,11 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
         }
       }
     });
+
+    // Debug log for problematic rows
+    if (i >= 70 && i <= 75) {
+      console.log(`Row ${i}: name="${row.name}", region="${row.region}", headers:`, headers);
+    }
 
     data.push(row);
   }
