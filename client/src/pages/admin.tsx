@@ -202,7 +202,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
   // Get unique values for filter options
   const uniqueRegions = Array.from(new Set(distilleries.map(d => d.region).filter(Boolean))).sort();
   const uniqueCountries = Array.from(new Set(distilleries.map(d => d.country).filter(Boolean))).sort();
-  const uniqueStatuses = Array.from(new Set(distilleries.map(d => d.status).filter(Boolean))).sort();
+  const uniqueStatuses = Array.from(new Set(distilleries.map(d => d.status).filter((s): s is string => Boolean(s)))).sort();
 
   // Filter distilleries based on selected filters
   const filteredDistilleries = distilleries.filter(distillery => {

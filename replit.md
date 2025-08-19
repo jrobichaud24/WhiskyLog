@@ -10,6 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Distilleries List Enhancement & Filtering System (August 19, 2025)
+- Implemented comprehensive sorting functionality: distilleries sorted by region first, then alphabetically by name
+- Added region headers with amber styling for visual organization and better navigation
+- Converted distilleries display from tile grid to organized list format with full descriptions
+- Enhanced list view to show name, region, founding year, website, country, status, and descriptions
+- Successfully imported and organized 170+ distilleries with proper validation and sorting
+- Added comprehensive filtering system with three filter categories:
+  * Region filter (Highland, Islay, Speyside, Islands, etc.)
+  * Country filter (Scotland, Japan, etc.) 
+  * Status filter (Active, Closed, etc.)
+- Implemented live count display showing filtered vs total results
+- Added "Clear Filters" button that appears when filters are active
+- Created smart empty states with different messages for "no matches" vs "no data"
+- Filters work in combination and maintain region-based sorting structure
+
 ## Authentication System Implementation (August 18, 2025)
 - Implemented complete user authentication system with PostgreSQL database
 - Created signup, login, password reset, and dashboard pages
