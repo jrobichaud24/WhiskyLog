@@ -278,7 +278,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-playfair font-bold text-slate-800">Distilleries</h2>
-          <p className="text-slate-600">Manage the master list of Scottish distilleries</p>
+          <p className="text-slate-600">Manage the master list of Scottish distilleries ({distilleries.length} total)</p>
         </div>
         <div className="flex space-x-3">
           <Button
@@ -431,76 +431,85 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
       )}
 
       {/* Distilleries List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse bg-white/90">
-              <CardContent className="p-6">
-                <div className="h-4 bg-slate-200 rounded mb-4"></div>
-                <div className="h-3 bg-slate-200 rounded mb-2"></div>
-                <div className="h-3 bg-slate-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))
-        ) : distilleries.length > 0 ? (
-          distilleries.map((distillery) => (
-            <Card key={distillery.id} className="group hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-amber-100" data-testid={`card-distillery-${distillery.id}`}>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-playfair font-bold text-xl text-slate-800 group-hover:text-amber-800 transition-colors" data-testid={`text-distillery-name-${distillery.id}`}>
-                      {distillery.name}
-                    </h3>
-                    <div className="flex items-center space-x-1 text-slate-600 mt-1">
-                      <MapPin className="h-4 w-4" />
-                      <span data-testid={`text-distillery-region-${distillery.id}`}>{distillery.region}</span>
+      <Card className="bg-white/90 backdrop-blur-sm border-amber-100">
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-4 border-b border-slate-100 animate-pulse">
+                  <div className="flex-1">
+                    <div className="h-5 bg-slate-200 rounded mb-2 w-1/3"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <div className="h-6 w-16 bg-slate-200 rounded"></div>
+                    <div className="h-6 w-12 bg-slate-200 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : distilleries.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto">
+              {distilleries.map((distillery, index) => (
+                <div 
+                  key={distillery.id} 
+                  className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${
+                    index < distilleries.length - 1 ? 'border-b border-slate-100' : ''
+                  }`}
+                  data-testid={`row-distillery-${distillery.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-3">
+                      <div>
+                        <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-distillery-name-${distillery.id}`}>
+                          {distillery.name}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <MapPin className="h-3 w-3" />
+                            <span data-testid={`text-distillery-region-${distillery.id}`}>{distillery.region}</span>
+                          </div>
+                          {distillery.founded && (
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{distillery.founded}</span>
+                            </div>
+                          )}
+                          {distillery.website && (
+                            <div className="flex items-center space-x-1">
+                              <Globe className="h-3 w-3" />
+                              <a href={distillery.website} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                                Website
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center space-x-2 ml-4">
                     <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                       {distillery.country}
                     </Badge>
-                    {distillery.founded && (
-                      <Badge variant="outline" className="border-slate-200">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {distillery.founded}
-                      </Badge>
-                    )}
                     <Badge 
                       variant={distillery.status === 'active' ? 'default' : 'secondary'}
-                      className={distillery.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                      className={distillery.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}
                     >
                       {distillery.status}
                     </Badge>
                   </div>
-
-                  {distillery.description && (
-                    <p className="text-slate-600 text-sm line-clamp-3" data-testid={`text-distillery-description-${distillery.id}`}>
-                      {distillery.description}
-                    </p>
-                  )}
-
-                  {distillery.website && (
-                    <div className="flex items-center space-x-1 text-amber-600 text-sm">
-                      <Globe className="h-4 w-4" />
-                      <a href={distillery.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        Website
-                      </a>
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <Building2 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Distilleries Found</h3>
-            <p className="text-slate-500">Add distilleries to start building your database</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Building2 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Distilleries Found</h3>
+              <p className="text-slate-500">Add distilleries to start building your database</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
