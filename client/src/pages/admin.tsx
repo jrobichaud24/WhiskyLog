@@ -27,16 +27,21 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
   const data = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
+    let values = parseCSVLine(lines[i]);
     
-    if (values.length !== headers.length) {
-      console.warn(`Skipping row ${i + 1}: has ${values.length} columns, expected ${headers.length}`);
-      continue;
+    // Allow rows with fewer columns, pad with empty strings
+    while (values.length < headers.length) {
+      values.push('');
+    }
+    
+    if (values.length > headers.length) {
+      console.warn(`Row ${i + 1}: has ${values.length} columns, expected ${headers.length}, truncating`);
+      values = values.slice(0, headers.length);
     }
 
     const row: any = {};
     headers.forEach((header, index) => {
-      const value = values[index].trim();
+      const value = values[index] ? values[index].trim() : '';
       
       // Convert common field types
       if (type === 'distilleries') {
