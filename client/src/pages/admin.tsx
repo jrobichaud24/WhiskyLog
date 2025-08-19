@@ -14,24 +14,22 @@ import type { Distillery, Product } from "@shared/schema";
 
 // CSV to JSON conversion utility
 function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): any[] {
-  console.log('Converting CSV text:', csvText.substring(0, 200) + '...');
+  console.log('Converting CSV with', csvText.split('\n').length, 'lines');
   const lines = csvText.trim().split('\n');
-  console.log('CSV lines:', lines);
   
   if (lines.length < 2) {
     throw new Error('CSV must have at least a header row and one data row');
   }
 
   const headers = parseCSVLine(lines[0]).map(h => h.trim());
-  console.log('CSV headers:', headers);
+  console.log('CSV headers detected:', headers.length, 'columns');
   const data = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
-    console.log(`Row ${i + 1} values:`, values);
     
     if (values.length !== headers.length) {
-      console.warn(`Row ${i + 1} has ${values.length} columns, expected ${headers.length}. Row data:`, values);
+      console.warn(`Skipping row ${i + 1}: has ${values.length} columns, expected ${headers.length}`);
       continue;
     }
 
@@ -47,6 +45,9 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           row[header] = value || 'active';
         } else if (header === 'country') {
           row[header] = value || 'Scotland';
+        } else if (header === 'region') {
+          // Region is required, set a default if empty
+          row[header] = value || 'Highland';
         } else {
           row[header] = value || null;
         }
@@ -63,11 +64,10 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
       }
     });
 
-    console.log('Converted row:', row);
     data.push(row);
   }
 
-  console.log('Final converted data:', data);
+  console.log(`Successfully converted ${data.length} rows from CSV`);
   return data;
 }
 

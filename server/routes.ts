@@ -265,9 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk import distilleries from spreadsheet
   app.post("/api/distilleries/bulk", async (req, res) => {
     try {
-      console.log("Raw request body:", req.body);
-      console.log("Body type:", typeof req.body);
-      console.log("Body length:", Array.isArray(req.body) ? req.body.length : 'not array');
+      console.log("Bulk import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
       
       if (!Array.isArray(req.body)) {
         return res.status(400).json({ message: "Expected an array of distilleries" });
