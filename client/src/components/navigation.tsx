@@ -1,10 +1,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [location] = useLocation();
+
+  // Helper function to determine if a nav item is active
+  const isActive = (path: string) => {
+    if (path === "/") {
+      return location === "/";
+    }
+    if (path === "/login") {
+      // Highlight "My Collection" for login, dashboard, and admin pages
+      return location === "/login" || location === "/dashboard" || location === "/admin" || location === "/signup";
+    }
+    return location.startsWith(path);
+  };
+
+  // Helper function to get nav link classes
+  const getNavLinkClasses = (path: string) => {
+    const baseClasses = "transition-colors font-medium";
+    if (isActive(path)) {
+      return `${baseClasses} text-amber-600 font-semibold`;
+    }
+    return `${baseClasses} text-gray-700 hover:text-amber-600`;
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 glass-effect border-b border-amber-400/20">
@@ -26,13 +48,13 @@ export default function Navigation() {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-home">
+            <Link href="/" className={getNavLinkClasses("/")} data-testid="nav-home">
               Home
             </Link>
-            <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-collection">
+            <Link href="/login" className={getNavLinkClasses("/login")} data-testid="nav-collection">
               My Collection
             </Link>
-            <Link href="/discover" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-discover">
+            <Link href="/discover" className={getNavLinkClasses("/discover")} data-testid="nav-discover">
               Discover
             </Link>
             <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-reviews">
@@ -61,13 +83,13 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-sm border-b border-amber-400/20 py-4">
             <div className="flex flex-col space-y-4 px-4">
-              <Link href="/" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-home">
+              <Link href="/" className={getNavLinkClasses("/")} data-testid="mobile-nav-home">
                 Home
               </Link>
-              <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-collection">
+              <Link href="/login" className={getNavLinkClasses("/login")} data-testid="mobile-nav-collection">
                 My Collection
               </Link>
-              <Link href="/discover" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-discover">
+              <Link href="/discover" className={getNavLinkClasses("/discover")} data-testid="mobile-nav-discover">
                 Discover
               </Link>
               <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-reviews">
