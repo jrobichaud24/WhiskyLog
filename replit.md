@@ -18,6 +18,9 @@ Preferred communication style: Simple, everyday language.
 - Enhanced storage interface with `getUsers()` method and `updateUserAdminStatus()` for admin management
 - Updated both DatabaseStorage and MemStorage implementations to handle admin functionality
 - Successfully applied database schema changes with `npm run db:push`
+- Updated dashboard to conditionally show "Database Management" section only for admin users
+- Enhanced login and signup flows to automatically redirect admin users to admin panel
+- Regular users continue to use dashboard, admin users go directly to admin management interface
 
 ## Distilleries List Enhancement & Filtering System (August 19, 2025)
 - Implemented comprehensive sorting functionality: distilleries sorted by region first, then alphabetically by name

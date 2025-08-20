@@ -63,6 +63,8 @@ export default function Dashboard() {
     return null;
   }
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
       {/* Hero Header */}
@@ -244,27 +246,29 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Admin Navigation */}
-        <Card className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-xl border-0 mt-8">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <Settings className="h-6 w-6 text-blue-400" />
+        {/* Admin Navigation - Only show for admin users */}
+        {user.isAdmin && (
+          <Card className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-xl border-0 mt-8">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <Settings className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Database Management</h3>
+                    <p className="text-slate-300 text-sm">Manage distilleries and products</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Database Management</h3>
-                  <p className="text-slate-300 text-sm">Manage distilleries and products</p>
-                </div>
+                <a href="/admin">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    Open Admin Panel
+                  </Button>
+                </a>
               </div>
-              <a href="/admin">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Open Admin Panel
-                </Button>
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

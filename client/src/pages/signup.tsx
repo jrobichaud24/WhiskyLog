@@ -34,12 +34,17 @@ export default function Signup() {
       });
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (user: any) => {
       toast({
         title: "Welcome to The Dram Journal!",
         description: "Your account has been created successfully.",
       });
-      setLocation("/dashboard");
+      // Redirect admin users to admin panel, regular users to dashboard
+      if (user?.isAdmin) {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: Error) => {
       toast({

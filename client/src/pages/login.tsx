@@ -32,12 +32,17 @@ export default function Login() {
       });
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (user: any) => {
       toast({
         title: "Welcome back!",
         description: "You have been logged in successfully.",
       });
-      setLocation("/dashboard");
+      // Redirect admin users to admin panel, regular users to dashboard
+      if (user?.isAdmin) {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: Error) => {
       toast({
