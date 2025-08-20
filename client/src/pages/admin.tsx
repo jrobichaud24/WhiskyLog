@@ -850,10 +850,32 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   };
 
   // Get distillery name by ID
-  const getDistilleryName = (distilleryId: string) => {
+  const getDistilleryName = (distilleryId: string | null) => {
+    if (!distilleryId) return "Unknown Distillery";
     const distillery = distilleries.find(d => d.id === distilleryId);
     return distillery?.name || "Unknown Distillery";
   };
+
+  // Sort products by distillery name, then by product name
+  const sortedProducts = [...products].sort((a, b) => {
+    const distilleryA = getDistilleryName(a.distillery);
+    const distilleryB = getDistilleryName(b.distillery);
+    
+    if (distilleryA !== distilleryB) {
+      return distilleryA.localeCompare(distilleryB);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  // Group products by distillery for display
+  const groupedProducts = sortedProducts.reduce((acc, product) => {
+    const distilleryName = getDistilleryName(product.distillery);
+    if (!acc[distilleryName]) {
+      acc[distilleryName] = [];
+    }
+    acc[distilleryName].push(product);
+    return acc;
+  }, {} as Record<string, typeof products>);
 
   return (
     <div className="space-y-6">
@@ -1031,79 +1053,105 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
       )}
 
       {/* Products List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse bg-white/90">
-              <CardContent className="p-6">
-                <div className="h-4 bg-slate-200 rounded mb-4"></div>
-                <div className="h-3 bg-slate-200 rounded mb-2"></div>
-                <div className="h-3 bg-slate-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))
-        ) : products.length > 0 ? (
-          products.map((product) => (
-            <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-amber-100" data-testid={`card-product-${product.id}`}>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-playfair font-bold text-xl text-slate-800 group-hover:text-amber-800 transition-colors" data-testid={`text-product-name-${product.id}`}>
-                      {product.name}
-                    </h3>
-                    <p className="text-slate-600" data-testid={`text-product-distillery-${product.id}`}>
-                      {getDistilleryName(product.distillery)}
-                    </p>
+      <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-amber-100">
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-4 p-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-slate-200 rounded mb-2"></div>
+                  <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : products.length > 0 ? (
+            <div className="space-y-6">
+              {Object.entries(groupedProducts).map(([distilleryName, distilleryProducts]) => (
+                <div key={distilleryName}>
+                  {/* Distillery Header */}
+                  <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                    <h4 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">
+                      {distilleryName} ({distilleryProducts.length} products)
+                    </h4>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2">
-                    {product.abvPercent && (
-                      <Badge variant="outline" className="border-slate-200">
-                        {product.abvPercent}% ABV
-                      </Badge>
-                    )}
-                    {product.volumeCl && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                        {product.volumeCl}cl
-                      </Badge>
-                    )}
-                    {product.filtration && (
-                      <Badge variant="outline" className="border-amber-200 text-amber-700">
-                        {product.filtration}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {product.description && (
-                    <p className="text-slate-600 text-sm line-clamp-3" data-testid={`text-product-description-${product.id}`}>
-                      {product.description}
-                    </p>
-                  )}
-
-                  <div className="flex justify-between items-center text-sm text-slate-500">
-                    {product.productUrl && (
-                      <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        View Product
-                      </a>
-                    )}
-                    {product.price && (
-                      <span className="font-semibold text-amber-600">
-                        £{product.price}
-                      </span>
-                    )}
-                  </div>
+                  {/* Products List */}
+                  {distilleryProducts.map((product, index) => (
+                    <div 
+                      key={product.id}
+                      className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${
+                        index < distilleryProducts.length - 1 ? 'border-b border-slate-100' : ''
+                      }`}
+                      data-testid={`row-product-${product.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-product-name-${product.id}`}>
+                              {product.name}
+                            </h3>
+                            <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
+                              {product.abvPercent && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">ABV:</span>
+                                  <span>{product.abvPercent}%</span>
+                                </div>
+                              )}
+                              {product.volumeCl && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">Volume:</span>
+                                  <span>{product.volumeCl}cl</span>
+                                </div>
+                              )}
+                              {product.filtration && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">Filtration:</span>
+                                  <span>{product.filtration}</span>
+                                </div>
+                              )}
+                              {product.productUrl && (
+                                <div className="flex items-center space-x-1">
+                                  <Globe className="h-3 w-3" />
+                                  <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                                    View Product
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            {product.description && (
+                              <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-product-description-${product.id}`}>
+                                {product.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        {product.price && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            £{product.price}
+                          </Badge>
+                        )}
+                        {product.appearance && (
+                          <Badge variant="outline" className="border-amber-200 text-amber-700">
+                            {product.appearance}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <Package className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Products Found</h3>
-            <p className="text-slate-500">Add products to start building your catalog</p>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Products Found</h3>
+              <p className="text-slate-500">Add products to start building your catalog</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
