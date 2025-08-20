@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { Star, Loader2 } from "lucide-react";
 import type { Whisky } from "@shared/schema";
 
@@ -86,12 +87,14 @@ export default function FeaturedWhiskies() {
         </div>
         
         <div className="text-center">
-          <Button 
-            className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 font-semibold"
-            data-testid="button-explore-collection"
-          >
-            Explore Full Collection
-          </Button>
+          <Link href="/discover">
+            <Button 
+              className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 font-semibold"
+              data-testid="button-explore-collection"
+            >
+              Explore Full Collection
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
