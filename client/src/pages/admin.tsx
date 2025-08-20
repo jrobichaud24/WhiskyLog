@@ -45,6 +45,35 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
     headers.forEach((header, index) => {
       const value = values[index] ? values[index].trim() : '';
       
+      // Map common CSV column name variations to schema fields
+      let fieldName = header;
+      if (type === 'products') {
+        const fieldMappings: Record<string, string> = {
+          'distillery_id': 'distillery',
+          'distilleryId': 'distillery',
+          'abv_percent': 'abvPercent',
+          'abvPercent': 'abvPercent',
+          'abv': 'abvPercent',
+          'volume_cl': 'volumeCl',
+          'volumeCl': 'volumeCl',
+          'volume': 'volumeCl',
+          'tasting_nose': 'tastingNose',
+          'tastingNose': 'tastingNose',
+          'nose': 'tastingNose',
+          'tasting_taste': 'tastingTaste',
+          'tastingTaste': 'tastingTaste',
+          'taste': 'tastingTaste',
+          'palate': 'tastingTaste',
+          'tasting_finish': 'tastingFinish',
+          'tastingFinish': 'tastingFinish',
+          'finish': 'tastingFinish',
+          'product_url': 'productUrl',
+          'productUrl': 'productUrl',
+          'url': 'productUrl'
+        };
+        fieldName = fieldMappings[header] || header;
+      }
+      
       // Convert common field types
       if (type === 'distilleries') {
         if (header === 'founded' && value) {
@@ -63,14 +92,20 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           row[header] = value || null;
         }
       } else if (type === 'products') {
-        if (header === 'age' && value) {
-          row[header] = parseInt(value) || null;
-        } else if (header === 'limitedEdition') {
-          row[header] = value.toLowerCase() === 'true' || value === '1';
-        } else if (header === 'availability') {
-          row[header] = value || 'available';
+        if (fieldName === 'name') {
+          // Name is required
+          row[fieldName] = value || `Product ${i}`;
+        } else if (fieldName === 'distillery') {
+          // Distillery should be a distillery ID
+          row[fieldName] = value || null;
+        } else if (fieldName === 'price' && value) {
+          row[fieldName] = parseFloat(value) || null;
+        } else if (fieldName === 'abvPercent' && value) {
+          row[fieldName] = parseFloat(value) || null;
+        } else if (fieldName === 'volumeCl' && value) {
+          row[fieldName] = parseFloat(value) || null;
         } else {
-          row[header] = value || null;
+          row[fieldName] = value || null;
         }
       }
     });

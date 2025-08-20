@@ -29,7 +29,7 @@ export const distilleries = pgTable("distilleries", {
 // Products table - all whisky products from all distilleries
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  distillery: varchar("distillery").notNull().references(() => distilleries.id),
+  distillery: varchar("distillery").references(() => distilleries.id),
   name: text("name").notNull(),
   price: decimal("price", { precision: 8, scale: 2 }),
   abvPercent: decimal("abv_percent", { precision: 4, scale: 1 }),
