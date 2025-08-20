@@ -1486,90 +1486,110 @@ function UsersManager({ users, isLoading }: { users: User[], isLoading: boolean 
       </div>
 
       {/* Users List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse bg-white/90">
-              <CardContent className="p-6">
-                <div className="h-4 bg-slate-200 rounded mb-4"></div>
-                <div className="h-3 bg-slate-200 rounded mb-2"></div>
-                <div className="h-3 bg-slate-200 rounded w-2/3"></div>
-              </CardContent>
-            </Card>
-          ))
-        ) : users.length > 0 ? (
-          users.map((user) => (
-            <Card key={user.id} className="group hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-amber-100" data-testid={`card-user-${user.id}`}>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-lg text-slate-800" data-testid={`text-user-username-${user.id}`}>
-                          {user.username}
-                        </h3>
-                        {user.isAdmin && (
-                          <Badge className="bg-amber-100 text-amber-800 border-amber-200" data-testid={`badge-admin-${user.id}`}>
-                            <Shield className="h-3 w-3 mr-1" />
-                            Admin
-                          </Badge>
-                        )}
+      <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-6 border-b border-slate-100 animate-pulse">
+                  <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                  </div>
+                  <div className="w-20 h-6 bg-slate-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : users.length > 0 ? (
+            <div className="space-y-0">
+              {users
+                .sort((a, b) => a.id.localeCompare(b.id))
+                .map((user, index) => (
+                  <div
+                    key={user.id}
+                    className={`flex items-center justify-between p-6 hover:bg-amber-50/50 transition-colors group ${
+                      index !== users.length - 1 ? 'border-b border-slate-100' : ''
+                    }`}
+                    data-testid={`row-user-${user.id}`}
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                        <Users className="h-4 w-4 text-amber-600" />
                       </div>
-                      <p className="text-slate-600 text-sm" data-testid={`text-user-email-${user.id}`}>
-                        {user.email}
-                      </p>
-                      <p className="text-slate-500 text-xs">
-                        Joined {new Date(user.createdAt!).toLocaleDateString()}
-                      </p>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="font-semibold text-slate-800" data-testid={`text-user-username-${user.id}`}>
+                            {user.username}
+                          </h3>
+                          {user.isAdmin && (
+                            <Badge className="bg-amber-100 text-amber-800 border-amber-200" data-testid={`badge-admin-${user.id}`}>
+                              <Shield className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="mt-1 space-y-1">
+                          <p className="text-slate-600 text-sm" data-testid={`text-user-email-${user.id}`}>
+                            {user.email}
+                          </p>
+                          <div className="flex items-center space-x-4 text-xs text-slate-500">
+                            <span>ID: {user.id}</span>
+                            <span>•</span>
+                            <span>Joined {new Date(user.createdAt!).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleAdmin(user)}
+                        disabled={toggleAdminMutation.isPending}
+                        className={user.isAdmin ? "border-red-200 text-red-700 hover:bg-red-50" : "border-green-200 text-green-700 hover:bg-green-50"}
+                        data-testid={`button-toggle-admin-${user.id}`}
+                      >
+                        {user.isAdmin ? (
+                          <>
+                            <ShieldOff className="h-4 w-4 mr-1" />
+                            Remove Admin
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="h-4 w-4 mr-1" />
+                            Make Admin
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={deleteUserMutation.isPending}
+                        className="border-red-200 text-red-700 hover:bg-red-50"
+                        data-testid={`button-delete-user-${user.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleAdmin(user)}
-                      disabled={toggleAdminMutation.isPending}
-                      className={user.isAdmin ? "border-red-200 text-red-700 hover:bg-red-50" : "border-green-200 text-green-700 hover:bg-green-50"}
-                      data-testid={`button-toggle-admin-${user.id}`}
-                    >
-                      {user.isAdmin ? (
-                        <>
-                          <ShieldOff className="h-4 w-4 mr-1" />
-                          Remove Admin
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="h-4 w-4 mr-1" />
-                          Make Admin
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user)}
-                      disabled={deleteUserMutation.isPending}
-                      className="border-red-200 text-red-700 hover:bg-red-50"
-                      data-testid={`button-delete-user-${user.id}`}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Users Found</h3>
-            <p className="text-slate-500">Users will appear here when they sign up</p>
-          </div>
-        )}
-      </div>
+                ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Users Found</h3>
+              <p className="text-slate-500">Users will appear here when they sign up</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
