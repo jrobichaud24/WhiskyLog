@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Dynamic Distillery Showcase Implementation (August 20, 2025)
+- Updated "Journey Through Scotland's Finest" section to display real distillery counts from database
+- Replaced hardcoded region data with dynamic queries fetching actual distillery data
+- Added React Query integration to fetch distilleries and calculate regional distribution
+- Implemented proper loading states with amber spinner matching brand colors
+- Enhanced region counting logic with proper grammar (1 Distillery vs X Distilleries)
+- Region display shows: Highland Region, Speyside, Islay, and Lowlands with accurate counts
+- Successfully connected home page "Explore Full Collection" button to discover page navigation
+
 ## Products Table Schema Update (August 20, 2025)
 - Completely redesigned products table schema to match user requirements
 - Updated fields: distillery (linked to distilleries table), name, price, abv_percent, volume_cl, filtration, appearance, description, tasting_nose, tasting_taste, tasting_finish, product_url
