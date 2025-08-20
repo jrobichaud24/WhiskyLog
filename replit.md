@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## User Administration System Implementation (August 20, 2025)
+- Added `isAdmin` boolean flag to users table with default value of false
+- Created admin middleware to protect administrative routes from unauthorized access
+- Implemented API endpoint `/api/admin/create-first-admin` for initial admin setup (only works when no admins exist)
+- Added API endpoint `/api/admin/users/:userId/admin-status` to promote/demote users to admin status
+- Enhanced storage interface with `getUsers()` method and `updateUserAdminStatus()` for admin management
+- Updated both DatabaseStorage and MemStorage implementations to handle admin functionality
+- Successfully applied database schema changes with `npm run db:push`
+
 ## Distilleries List Enhancement & Filtering System (August 19, 2025)
 - Implemented comprehensive sorting functionality: distilleries sorted by region first, then alphabetically by name
 - Added region headers with amber styling for visual organization and better navigation

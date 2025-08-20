@@ -380,6 +380,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin middleware
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = await storage.getUser(req.session.userId);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    next();
+  };
+
+  // Special route to create first admin (only works if no admins exist)
+  app.post("/api/admin/create-first-admin", async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      
+      // Check if any admin users already exist
+      const allUsers = await storage.getUsers();
+      const hasAdmin = allUsers.some(user => user.isAdmin);
+      
+      if (hasAdmin) {
+        return res.status(403).json({ message: "Admin user already exists" });
+      }
+      
+      // Create user with admin privileges
+      const adminUser = await storage.createUser({
+        ...validatedData,
+        isAdmin: true
+      });
+      
+      // Set session
+      req.session.userId = adminUser.id;
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = adminUser;
+      res.status(201).json(userWithoutPassword);
+      
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
+      }
+      console.error("Create first admin error:", error);
+      res.status(500).json({ message: "Failed to create admin user" });
+    }
+  });
+
+  // Admin routes
+  app.patch("/api/admin/users/:userId/admin-status", requireAdmin, async (req, res) => {
+    try {
+      const { isAdmin } = req.body;
+      const { userId } = req.params;
+      
+      if (typeof isAdmin !== 'boolean') {
+        return res.status(400).json({ message: "isAdmin must be a boolean" });
+      }
+      
+      const success = await storage.updateUserAdminStatus(userId, isAdmin);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ message: `User admin status updated to ${isAdmin}` });
+    } catch (error) {
+      console.error("Update admin status error:", error);
+      res.status(500).json({ message: "Failed to update admin status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

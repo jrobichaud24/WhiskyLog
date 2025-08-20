@@ -14,10 +14,12 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
+  updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
   
   // Distillery operations
   getDistilleries(): Promise<Distillery[]>;
@@ -113,6 +115,10 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
@@ -144,6 +150,16 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .update(users)
       .set({ password: hashedPassword })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean> {
+    const result = await db
+      .update(users)
+      .set({ isAdmin })
       .where(eq(users.id, userId))
       .returning();
     
@@ -273,6 +289,10 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
       (user) => user.username === username,
@@ -290,6 +310,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id, 
+      isAdmin: insertUser.isAdmin || false,
       createdAt: new Date() 
     };
     this.users.set(id, user);
@@ -301,6 +322,15 @@ export class MemStorage implements IStorage {
     if (!user) return false;
     
     user.password = newPassword;
+    this.users.set(userId, user);
+    return true;
+  }
+
+  async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean> {
+    const user = this.users.get(userId);
+    if (!user) return false;
+    
+    user.isAdmin = isAdmin;
     this.users.set(userId, user);
     return true;
   }
