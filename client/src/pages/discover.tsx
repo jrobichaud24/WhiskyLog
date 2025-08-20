@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Globe, MapPin, Package } from "lucide-react";
+import Navigation from "@/components/navigation";
 import type { Product, Distillery } from "@shared/schema";
 
 export default function Discover() {
@@ -104,8 +105,9 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-warmwhite">
+      <Navigation />
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-16">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-16 pt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="font-playfair text-4xl md:text-5xl font-bold text-slate-800 mb-4">

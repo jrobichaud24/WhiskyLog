@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import Navigation from "@/components/navigation";
 
 interface LoginForm {
   username: string;
@@ -59,6 +60,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center p-4">
+      <Navigation />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">

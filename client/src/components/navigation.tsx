@@ -11,22 +11,24 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-lg overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="The Dram Journal Logo" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="font-playfair text-2xl font-bold text-amber-600" data-testid="logo">
-              The Dram Journal
-            </span>
+            <Link href="/" className="flex items-center space-x-3" data-testid="logo-link">
+              <div className="w-12 h-12 rounded-lg overflow-hidden">
+                <img 
+                  src="/logo.png" 
+                  alt="The Dram Journal Logo" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="font-playfair text-2xl font-bold text-amber-600" data-testid="logo">
+                The Dram Journal
+              </span>
+            </Link>
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-home">
+            <Link href="/" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-home">
               Home
-            </a>
+            </Link>
             <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-collection">
               My Collection
             </Link>
@@ -59,9 +61,9 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-sm border-b border-amber-400/20 py-4">
             <div className="flex flex-col space-y-4 px-4">
-              <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-home">
+              <Link href="/" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-home">
                 Home
-              </a>
+              </Link>
               <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-collection">
                 My Collection
               </Link>
