@@ -99,7 +99,9 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           // Distillery should be a distillery ID
           row[fieldName] = value || null;
         } else if (fieldName === 'price' && value) {
-          row[fieldName] = value; // Keep as string for decimal fields
+          // Clean price by removing currency prefix (GBP, USD, etc.)
+          const cleanPrice = value.replace(/^[A-Z]{3}\s*/, '').trim();
+          row[fieldName] = cleanPrice || null;
         } else if (fieldName === 'abvPercent' && value) {
           row[fieldName] = value; // Keep as string for decimal fields
         } else if (fieldName === 'volumeCl' && value) {
