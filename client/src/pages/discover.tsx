@@ -11,6 +11,7 @@ import type { Product, Distillery } from "@shared/schema";
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDistillery, setSelectedDistillery] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [priceFilter, setPriceFilter] = useState<string>("all");
   const [abvFilter, setAbvFilter] = useState<string>("all");
 
@@ -30,12 +31,26 @@ export default function Discover() {
     return distillery?.name || "Unknown Distillery";
   };
 
+  // Get distillery by ID
+  const getDistillery = (distilleryId: string | null) => {
+    if (!distilleryId) return null;
+    return distilleries.find(d => d.id === distilleryId) || null;
+  };
+
+  // Get unique regions from distilleries
+  const uniqueRegions = Array.from(new Set(distilleries.map(d => d.region))).sort();
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          getDistilleryName(product.distillery).toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesDistillery = selectedDistillery === "all" || product.distillery === selectedDistillery;
+    
+    const matchesRegion = selectedRegion === "all" || (() => {
+      const distillery = getDistillery(product.distillery);
+      return distillery?.region === selectedRegion;
+    })();
     
     const matchesPrice = priceFilter === "all" || (() => {
       if (!product.price) return priceFilter === "unknown";
@@ -61,7 +76,7 @@ export default function Discover() {
       }
     })();
 
-    return matchesSearch && matchesDistillery && matchesPrice && matchesAbv;
+    return matchesSearch && matchesDistillery && matchesRegion && matchesPrice && matchesAbv;
   });
 
   // Group filtered products by distillery
@@ -80,6 +95,7 @@ export default function Discover() {
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedDistillery("all");
+    setSelectedRegion("all");
     setPriceFilter("all");
     setAbvFilter("all");
   };
@@ -105,7 +121,7 @@ export default function Discover() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             {/* Search */}
             <div className="lg:col-span-2 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -128,6 +144,21 @@ export default function Discover() {
                 {distilleries.map(distillery => (
                   <SelectItem key={distillery.id} value={distillery.id}>
                     {distillery.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Region Filter */}
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger data-testid="select-region-filter">
+                <SelectValue placeholder="All Regions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                {uniqueRegions.map(region => (
+                  <SelectItem key={region} value={region}>
+                    {region}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -169,7 +200,7 @@ export default function Discover() {
             <div className="text-sm text-slate-600">
               Showing {filteredProducts.length} of {products.length} whiskies
             </div>
-            {(searchQuery || selectedDistillery !== "all" || priceFilter !== "all" || abvFilter !== "all") && (
+            {(searchQuery || selectedDistillery !== "all" || selectedRegion !== "all" || priceFilter !== "all" || abvFilter !== "all") && (
               <Button
                 variant="outline"
                 size="sm"
