@@ -91,7 +91,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductsByDistillery(distilleryId: string): Promise<Product[]> {
-    return await db.select().from(products).where(eq(products.distilleryId, distilleryId));
+    return await db.select().from(products).where(eq(products.distillery, distilleryId));
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
@@ -434,17 +434,17 @@ export class MemStorage implements IStorage {
       ...insertProduct,
       id,
       createdAt: new Date(),
-      age: insertProduct.age || null,
-      caskType: insertProduct.caskType || null,
-      bottler: insertProduct.bottler || null,
-      vintage: insertProduct.vintage || null,
-      bottled: insertProduct.bottled || null,
-      limitedEdition: insertProduct.limitedEdition || false,
-      description: insertProduct.description || null,
-      tastingNotes: insertProduct.tastingNotes || null,
-      imageUrl: insertProduct.imageUrl || null,
+      updatedAt: new Date(),
       price: insertProduct.price || null,
-      availability: insertProduct.availability || "available",
+      abvPercent: insertProduct.abvPercent || null,
+      volumeCl: insertProduct.volumeCl || null,
+      filtration: insertProduct.filtration || null,
+      appearance: insertProduct.appearance || null,
+      description: insertProduct.description || null,
+      tastingNose: insertProduct.tastingNose || null,
+      tastingTaste: insertProduct.tastingTaste || null,
+      tastingFinish: insertProduct.tastingFinish || null,
+      productUrl: insertProduct.productUrl || null,
     };
     return product;
   }
@@ -454,17 +454,17 @@ export class MemStorage implements IStorage {
       ...p, 
       id: randomUUID(), 
       createdAt: new Date(),
-      age: p.age || null,
-      caskType: p.caskType || null,
-      bottler: p.bottler || null,
-      vintage: p.vintage || null,
-      bottled: p.bottled || null,
-      limitedEdition: p.limitedEdition || false,
-      description: p.description || null,
-      tastingNotes: p.tastingNotes || null,
-      imageUrl: p.imageUrl || null,
+      updatedAt: new Date(),
       price: p.price || null,
-      availability: p.availability || "available",
+      abvPercent: p.abvPercent || null,
+      volumeCl: p.volumeCl || null,
+      filtration: p.filtration || null,
+      appearance: p.appearance || null,
+      description: p.description || null,
+      tastingNose: p.tastingNose || null,
+      tastingTaste: p.tastingTaste || null,
+      tastingFinish: p.tastingFinish || null,
+      productUrl: p.productUrl || null,
     }));
   }
 

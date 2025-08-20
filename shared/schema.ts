@@ -85,6 +85,7 @@ export const insertDistillerySchema = createInsertSchema(distilleries).omit({
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertWhiskySchema = createInsertSchema(whiskies).omit({
