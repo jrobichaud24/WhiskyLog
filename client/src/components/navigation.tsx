@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -26,9 +27,9 @@ export default function Navigation() {
             <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-home">
               Home
             </a>
-            <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-collection">
+            <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-collection">
               My Collection
-            </a>
+            </Link>
             <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-discover">
               Discover
             </a>
@@ -61,9 +62,9 @@ export default function Navigation() {
               <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-home">
                 Home
               </a>
-              <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-collection">
+              <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-collection">
                 My Collection
-              </a>
+              </Link>
               <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-discover">
                 Discover
               </a>
