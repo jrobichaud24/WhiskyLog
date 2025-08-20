@@ -20,6 +20,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
+  deleteUser(userId: string): Promise<boolean>;
   
   // Distillery operations
   getDistilleries(): Promise<Distillery[]>;
@@ -160,6 +161,15 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .update(users)
       .set({ isAdmin })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const result = await db
+      .delete(users)
       .where(eq(users.id, userId))
       .returning();
     
@@ -333,6 +343,10 @@ export class MemStorage implements IStorage {
     user.isAdmin = isAdmin;
     this.users.set(userId, user);
     return true;
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    return this.users.delete(userId);
   }
 
   async getWhiskies(): Promise<Whisky[]> {

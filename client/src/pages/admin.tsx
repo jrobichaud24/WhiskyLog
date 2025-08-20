@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut } from "lucide-react";
+import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Distillery, Product } from "@shared/schema";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import type { Distillery, Product, User } from "@shared/schema";
 
 // CSV to JSON conversion utility
 function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): any[] {
@@ -162,6 +163,11 @@ export default function AdminPage() {
     queryKey: ["/api/products"],
   });
 
+  // Fetch users
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
       {/* Header */}
@@ -209,7 +215,7 @@ export default function AdminPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 bg-white/90 backdrop-blur-sm shadow-lg border-0">
+          <TabsList className="grid w-full grid-cols-3 bg-white/90 backdrop-blur-sm shadow-lg border-0">
             <TabsTrigger value="distilleries" className="flex items-center space-x-2 data-[state=active]:bg-amber-500 data-[state=active]:text-white">
               <Building2 className="h-4 w-4" />
               <span>Distilleries</span>
@@ -217,6 +223,10 @@ export default function AdminPage() {
             <TabsTrigger value="products" className="flex items-center space-x-2 data-[state=active]:bg-amber-500 data-[state=active]:text-white">
               <Package className="h-4 w-4" />
               <span>Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2 data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Users className="h-4 w-4" />
+              <span>Users</span>
             </TabsTrigger>
           </TabsList>
 
@@ -228,6 +238,11 @@ export default function AdminPage() {
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-8">
             <ProductsManager products={products} distilleries={distilleries} isLoading={productsLoading} />
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-8">
+            <UsersManager users={users} isLoading={usersLoading} />
           </TabsContent>
         </Tabs>
       </main>
@@ -1380,5 +1395,210 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function UsersManager({ users, isLoading }: { users: User[], isLoading: boolean }) {
+  const { toast } = useToast();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Toggle admin status mutation
+  const toggleAdminMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }: { userId: string, isAdmin: boolean }) => {
+      return await apiRequest(`/api/admin/users/${userId}/admin-status`, {
+        method: "PATCH",
+        body: { isAdmin }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User admin status updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user admin status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}`, {
+        method: "DELETE"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setSelectedUser(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleAdmin = (user: User) => {
+    toggleAdminMutation.mutate({ userId: user.id, isAdmin: !user.isAdmin });
+  };
+
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedUser) {
+      deleteUserMutation.mutate(selectedUser.id);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-slate-800">User Management</h2>
+          <p className="text-slate-600">Manage user accounts and permissions</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            {users.length} Total Users
+          </Badge>
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+            {users.filter(u => u.isAdmin).length} Admins
+          </Badge>
+        </div>
+      </div>
+
+      {/* Users List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="animate-pulse bg-white/90">
+              <CardContent className="p-6">
+                <div className="h-4 bg-slate-200 rounded mb-4"></div>
+                <div className="h-3 bg-slate-200 rounded mb-2"></div>
+                <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))
+        ) : users.length > 0 ? (
+          users.map((user) => (
+            <Card key={user.id} className="group hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-amber-100" data-testid={`card-user-${user.id}`}>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-semibold text-lg text-slate-800" data-testid={`text-user-username-${user.id}`}>
+                          {user.username}
+                        </h3>
+                        {user.isAdmin && (
+                          <Badge className="bg-amber-100 text-amber-800 border-amber-200" data-testid={`badge-admin-${user.id}`}>
+                            <Shield className="h-3 w-3 mr-1" />
+                            Admin
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-slate-600 text-sm" data-testid={`text-user-email-${user.id}`}>
+                        {user.email}
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        Joined {new Date(user.createdAt!).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleAdmin(user)}
+                      disabled={toggleAdminMutation.isPending}
+                      className={user.isAdmin ? "border-red-200 text-red-700 hover:bg-red-50" : "border-green-200 text-green-700 hover:bg-green-50"}
+                      data-testid={`button-toggle-admin-${user.id}`}
+                    >
+                      {user.isAdmin ? (
+                        <>
+                          <ShieldOff className="h-4 w-4 mr-1" />
+                          Remove Admin
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="h-4 w-4 mr-1" />
+                          Make Admin
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteUser(user)}
+                      disabled={deleteUserMutation.isPending}
+                      className="border-red-200 text-red-700 hover:bg-red-50"
+                      data-testid={`button-delete-user-${user.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Users Found</h3>
+            <p className="text-slate-500">Users will appear here when they sign up</p>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete user "{selectedUser?.username}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteUserMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
