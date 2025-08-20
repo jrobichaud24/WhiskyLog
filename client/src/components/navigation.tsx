@@ -30,9 +30,9 @@ export default function Navigation() {
             <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-collection">
               My Collection
             </Link>
-            <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-discover">
+            <Link href="/discover" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-discover">
               Discover
-            </a>
+            </Link>
             <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-reviews">
               Reviews
             </a>
@@ -65,9 +65,9 @@ export default function Navigation() {
               <Link href="/login" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-collection">
                 My Collection
               </Link>
-              <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-discover">
+              <Link href="/discover" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-discover">
                 Discover
-              </a>
+              </Link>
               <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-reviews">
                 Reviews
               </a>

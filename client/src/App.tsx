@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
+import Discover from "@/pages/discover";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/discover" component={Discover} />
       <Route component={NotFound} />
     </Switch>
   );
