@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter } from "lucide-react";
+import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Distillery, Product } from "@shared/schema";
 
@@ -126,7 +127,30 @@ function parseCSVLine(line: string): string[] {
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("distilleries");
+
+  // Logout functionality
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("/api/auth/logout", { method: "POST" });
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out.",
+      });
+      setLocation("/");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sign out failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Fetch distilleries
   const { data: distilleries = [], isLoading: distilleriesLoading } = useQuery<Distillery[]>({
@@ -150,22 +174,34 @@ export default function AdminPage() {
         />
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
-              <img 
-                src="/logo.png" 
-                alt="The Dram Journal Logo" 
-                className="w-full h-full object-cover rounded-lg"
-              />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
+                <img 
+                  src="/logo.png" 
+                  alt="The Dram Journal Logo" 
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </div>
+              <div>
+                <h1 className="font-playfair text-4xl font-bold text-white mb-1">
+                  Database Management
+                </h1>
+                <p className="text-amber-200 text-lg">
+                  Manage distilleries and products for The Dram Journal
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-playfair text-4xl font-bold text-white mb-1">
-                Database Management
-              </h1>
-              <p className="text-amber-200 text-lg">
-                Manage distilleries and products for The Dram Journal
-              </p>
-            </div>
+            <Button
+              variant="outline"
+              className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              data-testid="button-admin-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+            </Button>
           </div>
         </div>
       </header>
