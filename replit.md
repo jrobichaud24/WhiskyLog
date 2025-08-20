@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Products Table Schema Update (August 20, 2025)
+- Completely redesigned products table schema to match user requirements
+- Updated fields: distillery (linked to distilleries table), name, price, abv_percent, volume_cl, filtration, appearance, description, tasting_nose, tasting_taste, tasting_finish, product_url
+- Replaced old fields (age, cask_type, vintage, limited_edition, availability) with new specialized tasting and product information fields
+- Updated admin panel AddProductForm component with comprehensive form fields for all new schema properties
+- Updated product display cards to show new fields (ABV%, volume, filtration, product URL links)
+- Successfully migrated database using direct SQL recreation to avoid complex column renaming issues
+- All product management functionality now uses updated schema structure
+
 ## User Administration System Implementation (August 20, 2025)
 - Added `isAdmin` boolean flag to users table with default value of false
 - Created admin middleware to protect administrative routes from unauthorized access

@@ -1015,27 +1015,24 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
                       {product.name}
                     </h3>
                     <p className="text-slate-600" data-testid={`text-product-distillery-${product.id}`}>
-                      {getDistilleryName(product.distilleryId)}
+                      {getDistilleryName(product.distillery)}
                     </p>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {product.age && (
+                    {product.abvPercent && (
+                      <Badge variant="outline" className="border-slate-200">
+                        {product.abvPercent}% ABV
+                      </Badge>
+                    )}
+                    {product.volumeCl && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                        {product.age} years
+                        {product.volumeCl}cl
                       </Badge>
                     )}
-                    <Badge variant="outline" className="border-slate-200">
-                      {product.abv}% ABV
-                    </Badge>
-                    {product.caskType && (
+                    {product.filtration && (
                       <Badge variant="outline" className="border-amber-200 text-amber-700">
-                        {product.caskType}
-                      </Badge>
-                    )}
-                    {product.limitedEdition && (
-                      <Badge className="bg-red-100 text-red-800">
-                        Limited Edition
+                        {product.filtration}
                       </Badge>
                     )}
                   </div>
@@ -1047,7 +1044,11 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
                   )}
 
                   <div className="flex justify-between items-center text-sm text-slate-500">
-                    <span>{product.availability}</span>
+                    {product.productUrl && (
+                      <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        View Product
+                      </a>
+                    )}
                     {product.price && (
                       <span className="font-semibold text-amber-600">
                         £{product.price}
@@ -1234,12 +1235,17 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
-    distilleryId: "",
-    age: "",
-    abv: "",
-    caskType: "",
-    description: "",
+    distillery: "",
     price: "",
+    abvPercent: "",
+    volumeCl: "",
+    filtration: "",
+    appearance: "",
+    description: "",
+    tastingNose: "",
+    tastingTaste: "",
+    tastingFinish: "",
+    productUrl: "",
   });
 
   const createMutation = useMutation({
@@ -1270,8 +1276,9 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
     e.preventDefault();
     const submitData = {
       ...formData,
-      age: formData.age ? parseInt(formData.age) : undefined,
       price: formData.price ? parseFloat(formData.price) : undefined,
+      abvPercent: formData.abvPercent ? parseFloat(formData.abvPercent) : undefined,
+      volumeCl: formData.volumeCl ? parseFloat(formData.volumeCl) : undefined,
     };
     createMutation.mutate(submitData);
   };
@@ -1300,8 +1307,8 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
             <Label htmlFor="distillery">Distillery *</Label>
             <select
               id="distillery"
-              value={formData.distilleryId}
-              onChange={(e) => setFormData({ ...formData, distilleryId: e.target.value })}
+              value={formData.distillery}
+              onChange={(e) => setFormData({ ...formData, distillery: e.target.value })}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               required
               data-testid="select-product-distillery"
@@ -1313,41 +1320,6 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="age">Age (years)</Label>
-            <Input
-              id="age"
-              type="number"
-              value={formData.age}
-              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-              placeholder="18"
-              data-testid="input-product-age"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="abv">ABV % *</Label>
-            <Input
-              id="abv"
-              value={formData.abv}
-              onChange={(e) => setFormData({ ...formData, abv: e.target.value })}
-              placeholder="43.0"
-              required
-              data-testid="input-product-abv"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cask-type">Cask Type</Label>
-            <Input
-              id="cask-type"
-              value={formData.caskType}
-              onChange={(e) => setFormData({ ...formData, caskType: e.target.value })}
-              placeholder="e.g., Sherry, Bourbon, Port"
-              data-testid="input-product-cask-type"
-            />
           </div>
 
           <div className="space-y-2">
@@ -1363,14 +1335,107 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="abv-percent">ABV %</Label>
+            <Input
+              id="abv-percent"
+              type="number"
+              step="0.1"
+              value={formData.abvPercent}
+              onChange={(e) => setFormData({ ...formData, abvPercent: e.target.value })}
+              placeholder="43.0"
+              data-testid="input-product-abv-percent"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="volume-cl">Volume (cl)</Label>
+            <Input
+              id="volume-cl"
+              type="number"
+              step="0.1"
+              value={formData.volumeCl}
+              onChange={(e) => setFormData({ ...formData, volumeCl: e.target.value })}
+              placeholder="70"
+              data-testid="input-product-volume-cl"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="filtration">Filtration</Label>
+            <Input
+              id="filtration"
+              value={formData.filtration}
+              onChange={(e) => setFormData({ ...formData, filtration: e.target.value })}
+              placeholder="e.g., Non-chill filtered"
+              data-testid="input-product-filtration"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="appearance">Appearance</Label>
+            <Textarea
+              id="appearance"
+              value={formData.appearance}
+              onChange={(e) => setFormData({ ...formData, appearance: e.target.value })}
+              placeholder="Color and visual characteristics..."
+              data-testid="textarea-product-appearance"
+            />
+          </div>
+
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="product-description">Description</Label>
             <Textarea
               id="product-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Tasting notes and description..."
+              placeholder="General description of the whisky..."
               data-testid="textarea-product-description"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-nose">Tasting Notes - Nose</Label>
+            <Textarea
+              id="tasting-nose"
+              value={formData.tastingNose}
+              onChange={(e) => setFormData({ ...formData, tastingNose: e.target.value })}
+              placeholder="Aromas and scents detected on the nose..."
+              data-testid="textarea-product-tasting-nose"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-taste">Tasting Notes - Taste</Label>
+            <Textarea
+              id="tasting-taste"
+              value={formData.tastingTaste}
+              onChange={(e) => setFormData({ ...formData, tastingTaste: e.target.value })}
+              placeholder="Flavors experienced on the palate..."
+              data-testid="textarea-product-tasting-taste"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-finish">Tasting Notes - Finish</Label>
+            <Textarea
+              id="tasting-finish"
+              value={formData.tastingFinish}
+              onChange={(e) => setFormData({ ...formData, tastingFinish: e.target.value })}
+              placeholder="Aftertaste and finish characteristics..."
+              data-testid="textarea-product-tasting-finish"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="product-url">Product URL</Label>
+            <Input
+              id="product-url"
+              type="url"
+              value={formData.productUrl}
+              onChange={(e) => setFormData({ ...formData, productUrl: e.target.value })}
+              placeholder="https://example.com/product"
+              data-testid="input-product-url"
             />
           </div>
 

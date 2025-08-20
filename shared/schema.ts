@@ -29,21 +29,20 @@ export const distilleries = pgTable("distilleries", {
 // Products table - all whisky products from all distilleries
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  distillery: varchar("distillery").notNull().references(() => distilleries.id),
   name: text("name").notNull(),
-  distilleryId: varchar("distillery_id").notNull().references(() => distilleries.id),
-  age: integer("age"), // Age statement in years, null for NAS (No Age Statement)
-  abv: decimal("abv", { precision: 4, scale: 1 }).notNull(), // Alcohol by volume
-  caskType: text("cask_type"), // Bourbon, Sherry, Port, etc.
-  bottler: text("bottler"), // OB (Official Bottling) or IB (Independent Bottling)
-  vintage: integer("vintage"), // Year distilled
-  bottled: integer("bottled"), // Year bottled  
-  limitedEdition: boolean("limited_edition").default(false),
+  price: decimal("price", { precision: 8, scale: 2 }),
+  abvPercent: decimal("abv_percent", { precision: 4, scale: 1 }),
+  volumeCl: decimal("volume_cl", { precision: 6, scale: 1 }),
+  filtration: text("filtration"),
+  appearance: text("appearance"),
   description: text("description"),
-  tastingNotes: text("tasting_notes"),
-  imageUrl: text("image_url"),
-  price: decimal("price", { precision: 8, scale: 2 }), // Retail price
-  availability: text("availability").default("available"), // available, discontinued, limited
+  tastingNose: text("tasting_nose"),
+  tastingTaste: text("tasting_taste"),
+  tastingFinish: text("tasting_finish"),
+  productUrl: text("product_url"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Keep whiskies table for backward compatibility, but reference products
