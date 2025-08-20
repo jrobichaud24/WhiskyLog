@@ -347,7 +347,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk import products from spreadsheet
   app.post("/api/products/bulk", async (req, res) => {
     try {
+      console.log("Bulk product import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
+      
+      if (!Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Expected an array of products" });
+      }
+
+      if (req.body.length === 0) {
+        return res.status(400).json({ message: "Cannot import empty array" });
+      }
+
+      // Log first item to see what fields we're receiving
+      console.log("First product item:", JSON.stringify(req.body[0], null, 2));
+      
       const validatedData = bulkProductSchema.parse(req.body);
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
+      
       const products = await storage.bulkCreateProducts(validatedData);
       res.status(201).json({
         message: `Successfully imported ${products.length} products`,
@@ -355,6 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Product validation errors:", error.errors);
         return res.status(400).json({ 
           message: "Invalid product data", 
           errors: error.errors 
