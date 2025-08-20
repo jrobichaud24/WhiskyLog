@@ -1,29 +1,61 @@
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import type { Distillery } from "@shared/schema";
 
-const regions = [
-  {
-    name: "Highland Region",
-    distilleries: "12 Distilleries",
-    image: "scottish-highlands",
-  },
-  {
-    name: "Speyside",
-    distilleries: "8 Distilleries", 
-    image: "speyside-region",
-  },
-  {
-    name: "Islay",
-    distilleries: "6 Distilleries",
-    image: "islay-region",
-  },
-  {
-    name: "Lowlands",
-    distilleries: "4 Distilleries",
-    image: "lowlands-region",
-  },
+const regionDisplayOrder = [
+  "Highland",
+  "Speyside", 
+  "Islay",
+  "Lowlands",
 ];
 
 export default function DistilleryShowcase() {
+  const { data: distilleries = [], isLoading } = useQuery<Distillery[]>({
+    queryKey: ["/api/distilleries"],
+  });
+
+  // Group distilleries by region and count them
+  const regionCounts = distilleries.reduce((acc, distillery) => {
+    const region = distillery.region;
+    if (region) {
+      acc[region] = (acc[region] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Create display regions with actual counts
+  const displayRegions = regionDisplayOrder.map(region => {
+    const count = regionCounts[region] || 0;
+    const displayName = region === "Highland" ? "Highland Region" : region;
+    return {
+      name: displayName,
+      distilleries: count === 1 ? "1 Distillery" : `${count} Distilleries`,
+      count: count,
+      region: region
+    };
+  });
+
+  if (isLoading) {
+    return (
+      <section className="py-20 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="font-playfair text-4xl md:text-5xl font-bold mb-4" data-testid="heading-distillery">
+              Journey Through <span className="text-amber-400">Scotland's Finest</span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto" data-testid="text-distillery-description">
+              Explore the heritage and craftsmanship behind every bottle
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-amber-400" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,7 +69,7 @@ export default function DistilleryShowcase() {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {regions.map((region, index) => (
+          {displayRegions.map((region, index) => (
             <Card 
               key={region.name} 
               className="relative overflow-hidden group cursor-pointer bg-transparent border-none"
