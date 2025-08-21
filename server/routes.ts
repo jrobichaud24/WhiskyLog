@@ -464,8 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const userProduct = await storage.getUserProduct(req.session.userId, ""); // We'll need to get by ID instead
-      // For now, we'll implement a simple approach - get all user products and find the one to delete
+      // Get all user products and verify the product belongs to the current user
       const userProducts = await storage.getUserProducts(req.session.userId);
       const productToDelete = userProducts.find(up => up.id === req.params.id);
       
@@ -473,7 +472,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found in your collection" });
       }
 
-      await storage.deleteUserProduct(req.params.id);
+      // Verify ownership before deletion
+      if (productToDelete.userId !== req.session.userId) {
+        return res.status(403).json({ message: "You can only delete your own products" });
+      }
+
+      const success = await storage.deleteUserProduct(req.params.id);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete product from database" });
+      }
+      
       res.json({ message: "Product removed successfully" });
     } catch (error) {
       console.error("Delete user product error:", error);

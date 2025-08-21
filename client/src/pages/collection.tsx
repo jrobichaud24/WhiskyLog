@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,6 +88,14 @@ export default function Collection() {
     }
   });
 
+  // Redirect to login if not authenticated (using useEffect to prevent render warnings)
+  React.useEffect(() => {
+    if (!userLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, userLoading, setLocation]);
+
+  // Handle loading states after all hooks are defined
   if (userLoading || productsLoading || userProductsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite flex items-center justify-center">
@@ -98,8 +107,8 @@ export default function Collection() {
     );
   }
 
+  // Return null if user is not authenticated (useEffect will handle redirect)
   if (!user) {
-    setLocation("/login");
     return null;
   }
 
@@ -214,15 +223,15 @@ export default function Collection() {
                         <h3 className="text-2xl font-bold text-slate-800 font-playfair">
                           {product?.name || 'Unknown Whisky'}
                         </h3>
-                        <p className="text-slate-600 font-medium flex items-center gap-2">
+                        <div className="text-slate-600 font-medium flex items-center gap-2">
                           <Building2 className="h-4 w-4" />
-                          {distillery?.name || 'Unknown Distillery'}
+                          <span>{distillery?.name || 'Unknown Distillery'}</span>
                           {distillery?.region && (
                             <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                               {distillery.region}
                             </Badge>
                           )}
-                        </p>
+                        </div>
                       </div>
                       
                       <div className="flex flex-wrap gap-3 text-sm">
