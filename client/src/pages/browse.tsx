@@ -26,7 +26,8 @@ import {
   Percent,
   Plus,
   Star,
-  Heart
+  Heart,
+  Check
 } from "lucide-react";
 import type { Product, Distillery, User } from "@shared/schema";
 
@@ -64,7 +65,7 @@ export default function Browse() {
   });
 
   // Get user's collection to check wishlist status
-  const { data: userProducts = [] } = useQuery({
+  const { data: userProducts = [] } = useQuery<any[]>({
     queryKey: ["/api/user-products"],
     enabled: !!user,
   });
@@ -176,6 +177,8 @@ export default function Browse() {
       setSelectedProduct(null);
       setRating(0);
       setTastingNotes("");
+      // Refresh user products to update UI
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
     },
     onError: (error: Error) => {
       toast({
@@ -263,7 +266,12 @@ export default function Browse() {
 
   // Helper function to check if product is in wishlist
   const isInWishlist = (productId: string) => {
-    return userProducts.some((up: any) => up.productId === productId && up.wishlist);
+    return (userProducts as any[]).some((up: any) => up.productId === productId && up.wishlist);
+  };
+
+  // Helper function to check if product is in collection (owned)
+  const isInCollection = (productId: string) => {
+    return (userProducts as any[]).some((up: any) => up.productId === productId && up.owned);
   };
 
   if (userLoading) {
@@ -616,15 +624,24 @@ export default function Browse() {
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm"
-                              onClick={() => handleAddToCollection(product)}
-                              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
+                              onClick={isInCollection(product.id) ? undefined : () => handleAddToCollection(product)}
+                              disabled={isInCollection(product.id)}
+                              className={`w-8 h-8 p-0 shadow-lg border-0 ${
+                                isInCollection(product.id)
+                                  ? "bg-green-500 hover:bg-green-500 text-white cursor-default"
+                                  : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                              }`}
                               data-testid={`button-add-to-journal-${product.id}`}
                             >
-                              <Plus className="h-4 w-4" />
+                              {isInCollection(product.id) ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <Plus className="h-4 w-4" />
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Add to Journal</p>
+                            <p>{isInCollection(product.id) ? "In your collection" : "Add to Journal"}</p>
                           </TooltipContent>
                         </Tooltip>
                         
