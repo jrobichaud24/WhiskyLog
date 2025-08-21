@@ -139,6 +139,7 @@ export default function Dashboard() {
                   <Button 
                     variant="outline" 
                     className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 px-6 py-3 text-lg" 
+                    onClick={() => setLocation("/browse")}
                     data-testid="button-browse-whiskies"
                   >
                     Browse Whiskies
