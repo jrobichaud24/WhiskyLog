@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Star, Plus, BookOpen, Settings } from "lucide-react";
+import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart } from "lucide-react";
 
 import type { User, Whisky } from "@shared/schema";
 
@@ -130,19 +130,31 @@ export default function Dashboard() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 px-6 py-3 text-lg" 
-                    data-testid="button-add-whisky"
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 px-6 py-3 text-lg" 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Collection view will be available soon. For now, you can view your rated whiskies in the browse section.",
+                      });
+                    }}
+                    data-testid="button-view-collection"
                   >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Add Whisky to Collection
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    View Collection
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 px-6 py-3 text-lg" 
-                    onClick={() => setLocation("/browse")}
-                    data-testid="button-browse-whiskies"
+                    className="border-2 border-green-200 text-green-700 hover:bg-green-50 px-6 py-3 text-lg" 
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon", 
+                        description: "Wishlist view will be available soon. For now, you can see wishlisted items in the browse section.",
+                      });
+                    }}
+                    data-testid="button-view-wishlist"
                   >
-                    Browse Whiskies
+                    <Heart className="h-5 w-5 mr-2" />
+                    View Wishlist
                   </Button>
                 </div>
               </div>

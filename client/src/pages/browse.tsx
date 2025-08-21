@@ -379,16 +379,32 @@ export default function Browse() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
+                onClick={() => {
+                  toast({
+                    title: "Add Whisky",
+                    description: "Use the browse list below to add whiskies to your collection by clicking the plus button next to any whisky.",
+                  });
+                }}
+                data-testid="button-add-whisky"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Whisky to Collection
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
