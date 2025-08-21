@@ -17,6 +17,12 @@ export default function Dashboard() {
     retry: false
   });
 
+  // Get user's collection data
+  const { data: userProducts = [] } = useQuery<any[]>({
+    queryKey: ["/api/user-products"],
+    enabled: !!user,
+  });
+
 
 
   const logoutMutation = useMutation({
@@ -62,7 +68,14 @@ export default function Dashboard() {
     return null;
   }
 
-
+  // Calculate statistics from user's collection
+  const collectionWhiskies = (userProducts as any[]).filter((up: any) => up.owned);
+  const whiskiesTriedCount = collectionWhiskies.length;
+  const ratingsOnly = collectionWhiskies.filter((up: any) => up.rating && up.rating > 0);
+  const averageRating = ratingsOnly.length > 0 
+    ? (ratingsOnly.reduce((sum: number, up: any) => sum + up.rating, 0) / ratingsOnly.length).toFixed(1)
+    : null;
+  const wishlistCount = (userProducts as any[]).filter((up: any) => up.wishlist && !up.owned).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
@@ -192,7 +205,9 @@ export default function Dashboard() {
             <CardContent className="p-6 space-y-6">
               <div className="text-center space-y-2">
                 <span className="text-amber-200 text-sm font-medium">Whiskies Tried</span>
-                <div className="text-4xl font-bold text-white" data-testid="stat-whiskies-tried">0</div>
+                <div className="text-4xl font-bold text-white" data-testid="stat-whiskies-tried">
+                  {whiskiesTriedCount}
+                </div>
               </div>
               
               <div className="text-center space-y-2">
@@ -201,16 +216,24 @@ export default function Dashboard() {
                   {[...Array(5)].map((_, i) => (
                     <Star 
                       key={i} 
-                      className="h-5 w-5 text-slate-600" 
+                      className={`h-5 w-5 ${
+                        averageRating && i < Math.floor(parseFloat(averageRating))
+                          ? "text-amber-400 fill-amber-400"
+                          : "text-slate-600"
+                      }`}
                     />
                   ))}
                 </div>
-                <div className="text-2xl font-semibold text-slate-400" data-testid="stat-average-rating">Not rated yet</div>
+                <div className="text-2xl font-semibold text-white" data-testid="stat-average-rating">
+                  {averageRating ? `${averageRating}/5` : "Not rated yet"}
+                </div>
               </div>
               
               <div className="text-center space-y-2">
-                <span className="text-amber-200 text-sm font-medium">Collection Size</span>
-                <div className="text-4xl font-bold text-white" data-testid="stat-collection-size">0</div>
+                <span className="text-amber-200 text-sm font-medium">Wishlist Items</span>
+                <div className="text-4xl font-bold text-white" data-testid="stat-wishlist-size">
+                  {wishlistCount}
+                </div>
               </div>
             </CardContent>
           </Card>
