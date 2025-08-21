@@ -193,7 +193,7 @@ export default function Browse() {
                   Browse Collection
                 </h1>
                 <p className="text-amber-200 text-lg">
-                  Discover whiskies for your journal, {user.username}
+                  Discover whiskies for your journal, {user.firstName || user.username}
                 </p>
               </div>
             </div>

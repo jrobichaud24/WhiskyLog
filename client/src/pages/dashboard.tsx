@@ -93,7 +93,7 @@ export default function Dashboard() {
                   The Dram Journal
                 </h1>
                 <p className="text-amber-200 text-lg">
-                  Welcome back, {user.username}
+                  Welcome back, {user.firstName || user.username}
                 </p>
               </div>
             </div>
