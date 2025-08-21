@@ -25,7 +25,8 @@ import {
   DollarSign,
   Percent,
   Plus,
-  Star
+  Star,
+  Heart
 } from "lucide-react";
 import type { Product, Distillery, User } from "@shared/schema";
 
@@ -179,6 +180,34 @@ export default function Browse() {
     }
   });
 
+  // Add to wishlist mutation
+  const addToWishlistMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      return await apiRequest(`/api/user-products`, {
+        method: "POST",
+        body: {
+          productId,
+          wishlist: true,
+          owned: false
+        }
+      });
+    },
+    onSuccess: (_, productId) => {
+      const product = productsData?.find(p => p.id === productId);
+      toast({
+        title: "Added to Wishlist",
+        description: `${product?.name} has been added to your wishlist!`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleAddToCollection = (product: Product) => {
     setSelectedProduct(product);
     setIsDialogOpen(true);
@@ -201,6 +230,10 @@ export default function Browse() {
       rating,
       tastingNotes
     });
+  };
+
+  const handleAddToWishlist = (productId: string) => {
+    addToWishlistMutation.mutate(productId);
   };
 
   if (userLoading) {
@@ -526,6 +559,23 @@ export default function Browse() {
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm"
+                              onClick={() => handleAddToWishlist(product.id)}
+                              variant="outline"
+                              className="border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 w-8 h-8 p-0"
+                              data-testid={`button-add-to-wishlist-${product.id}`}
+                            >
+                              <Heart className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Add to Wishlist</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm"
                               onClick={() => handleAddToCollection(product)}
                               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
                               data-testid={`button-add-to-journal-${product.id}`}
@@ -537,6 +587,7 @@ export default function Browse() {
                             <p>Add to Journal</p>
                           </TooltipContent>
                         </Tooltip>
+                        
                         {product.productUrl && (
                           <Tooltip>
                             <TooltipTrigger asChild>
