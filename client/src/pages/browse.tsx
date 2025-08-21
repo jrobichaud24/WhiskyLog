@@ -35,12 +35,12 @@ export default function Browse() {
 
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDistillery, setSelectedDistillery] = useState("");
+  const [selectedDistillery, setSelectedDistillery] = useState("all");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [minABV, setMinABV] = useState("");
   const [maxABV, setMaxABV] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("all");
 
   // Data queries
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -92,7 +92,7 @@ export default function Browse() {
     }
 
     // Distillery filter
-    if (selectedDistillery && product.distillery !== selectedDistillery) {
+    if (selectedDistillery && selectedDistillery !== "all" && product.distillery !== selectedDistillery) {
       return false;
     }
 
@@ -113,7 +113,7 @@ export default function Browse() {
     }
 
     // Region filter
-    if (selectedRegion && distillery?.region !== selectedRegion) {
+    if (selectedRegion && selectedRegion !== "all" && distillery?.region !== selectedRegion) {
       return false;
     }
 
@@ -121,20 +121,20 @@ export default function Browse() {
   });
 
   // Get unique regions from distilleries
-  const regions = Array.from(new Set(distilleries.map(d => d.region))).filter(Boolean).sort();
+  const regions = Array.from(new Set(distilleries.map(d => d.region))).filter(region => region && region.trim() !== "").sort();
 
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm("");
-    setSelectedDistillery("");
+    setSelectedDistillery("all");
     setMinPrice("");
     setMaxPrice("");
     setMinABV("");
     setMaxABV("");
-    setSelectedRegion("");
+    setSelectedRegion("all");
   };
 
-  const hasActiveFilters = searchTerm || selectedDistillery || minPrice || maxPrice || minABV || maxABV || selectedRegion;
+  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minPrice || maxPrice || minABV || maxABV || (selectedRegion !== "all");
 
   if (userLoading) {
     return (
@@ -258,7 +258,7 @@ export default function Browse() {
                     <SelectValue placeholder="All Distilleries" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Distilleries</SelectItem>
+                    <SelectItem value="all">All Distilleries</SelectItem>
                     {distilleries.map((distillery) => (
                       <SelectItem key={distillery.id} value={distillery.id}>
                         {distillery.name}
@@ -276,7 +276,7 @@ export default function Browse() {
                     <SelectValue placeholder="All Regions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Regions</SelectItem>
+                    <SelectItem value="all">All Regions</SelectItem>
                     {regions.map((region) => (
                       <SelectItem key={region} value={region}>
                         {region}
