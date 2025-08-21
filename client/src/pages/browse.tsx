@@ -193,7 +193,7 @@ export default function Browse() {
       });
     },
     onSuccess: (_, productId) => {
-      const product = productsData?.find(p => p.id === productId);
+      const product = products?.find((p: Product) => p.id === productId);
       toast({
         title: "Added to Wishlist",
         description: `${product?.name} has been added to your wishlist!`,
@@ -561,7 +561,7 @@ export default function Browse() {
                               size="sm"
                               onClick={() => handleAddToWishlist(product.id)}
                               variant="outline"
-                              className="border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 w-8 h-8 p-0"
+                              className="border-2 border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 w-8 h-8 p-0"
                               data-testid={`button-add-to-wishlist-${product.id}`}
                             >
                               <Heart className="h-4 w-4" />
@@ -577,7 +577,7 @@ export default function Browse() {
                             <Button 
                               size="sm"
                               onClick={() => handleAddToCollection(product)}
-                              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 w-8 h-8 p-0"
                               data-testid={`button-add-to-journal-${product.id}`}
                             >
                               <Plus className="h-4 w-4" />
