@@ -167,12 +167,7 @@ export default function Dashboard() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
                     className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 px-6 py-3 text-lg" 
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Collection view will be available soon. For now, you can view your rated whiskies in the browse section.",
-                      });
-                    }}
+                    onClick={() => setLocation("/collection")}
                     data-testid="button-view-collection"
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />

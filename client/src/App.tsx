@@ -9,6 +9,7 @@ import Signup from "@/pages/signup";
 import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
+import Collection from "@/pages/collection";
 import AdminPage from "@/pages/admin";
 import Discover from "@/pages/discover";
 import Browse from "@/pages/browse";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/collection" component={Collection} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/discover" component={Discover} />
       <Route path="/browse" component={Browse} />
