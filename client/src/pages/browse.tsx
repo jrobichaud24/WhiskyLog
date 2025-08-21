@@ -63,6 +63,12 @@ export default function Browse() {
     queryKey: ["/api/distilleries"]
   });
 
+  // Get user's collection to check wishlist status
+  const { data: userProducts = [] } = useQuery({
+    queryKey: ["/api/user-products"],
+    enabled: !!user,
+  });
+
   // Logout functionality
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -207,6 +213,8 @@ export default function Browse() {
         title: "Added to Wishlist",
         description: `${product?.name} has been added to your wishlist!`,
       });
+      // Refresh user products to update UI
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
     },
     onError: (error: Error) => {
       if (error.message === "ALREADY_IN_COLLECTION") {
@@ -251,6 +259,11 @@ export default function Browse() {
 
   const handleAddToWishlist = (productId: string) => {
     addToWishlistMutation.mutate(productId);
+  };
+
+  // Helper function to check if product is in wishlist
+  const isInWishlist = (productId: string) => {
+    return userProducts.some((up: any) => up.productId === productId && up.wishlist);
   };
 
   if (userLoading) {
@@ -578,14 +591,24 @@ export default function Browse() {
                               size="sm"
                               onClick={() => handleAddToWishlist(product.id)}
                               variant="outline"
-                              className="border-2 border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 w-8 h-8 p-0"
+                              className={`border-2 w-8 h-8 p-0 ${
+                                isInWishlist(product.id)
+                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
+                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                              }`}
                               data-testid={`button-add-to-wishlist-${product.id}`}
                             >
-                              <Heart className="h-4 w-4" />
+                              <Heart 
+                                className={`h-4 w-4 ${
+                                  isInWishlist(product.id) 
+                                    ? "fill-green-600 font-bold stroke-2" 
+                                    : ""
+                                }`} 
+                              />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Add to Wishlist</p>
+                            <p>{isInWishlist(product.id) ? "Whisky in wishlist" : "Add to Wishlist"}</p>
                           </TooltipContent>
                         </Tooltip>
                         
