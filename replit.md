@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Collection Page Implementation (August 21, 2025)
+- Created dedicated collection page (/collection) displaying user's owned whiskies with detailed information
+- Added comprehensive whisky display cards showing product details, ratings, tasting notes, and collection dates
+- Implemented remove functionality with proper ownership verification and database deletion
+- Enhanced delete API endpoint with security checks to prevent unauthorized deletions
+- Fixed React hooks order violations and component lifecycle issues for stable rendering
+- Added proper authentication redirects and loading states for better user experience
+- Connected "View Collection" button from dashboard to navigate to new collection page
+- Styled with consistent Scottish Highland design theme using amber accents and premium card layouts
+- Collection page shows empty state when no whiskies are owned, encouraging users to start browsing
+- Successfully tested delete functionality - items are properly removed from database and UI updates immediately
+
 ## Dynamic Distillery Showcase Implementation (August 20, 2025)
 - Updated "Journey Through Scotland's Finest" section to display real distillery counts from database
 - Replaced hardcoded region data with dynamic queries fetching actual distillery data
