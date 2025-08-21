@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut, Star, Plus, BookOpen, Settings } from "lucide-react";
-import Navigation from "@/components/navigation";
+
 import type { User, Whisky } from "@shared/schema";
 
 export default function Dashboard() {
@@ -68,7 +68,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
-      <Navigation />
       {/* Hero Header */}
       <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
         {/* Background Pattern */}

@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Navigation from "@/components/navigation";
+
 import type { Distillery, Product, User } from "@shared/schema";
 
 // CSV to JSON conversion utility
@@ -208,7 +208,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
-      <Navigation />
       {/* Header */}
       <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
         <div 
