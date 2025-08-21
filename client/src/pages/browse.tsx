@@ -577,7 +577,7 @@ export default function Browse() {
                             <Button 
                               size="sm"
                               onClick={() => handleAddToCollection(product)}
-                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 w-8 h-8 p-0"
+                              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
                               data-testid={`button-add-to-journal-${product.id}`}
                             >
                               <Plus className="h-4 w-4" />
