@@ -412,6 +412,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/user-products/check/:productId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const existingUserProduct = await storage.getUserProduct(req.session.userId, req.params.productId);
+      res.json({ 
+        inCollection: !!existingUserProduct,
+        isOwned: existingUserProduct?.owned || false,
+        isWishlisted: existingUserProduct?.wishlist || false
+      });
+    } catch (error) {
+      console.error("Check user product error:", error);
+      res.status(500).json({ message: "Failed to check product status" });
+    }
+  });
+
   app.post("/api/user-products", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Authentication required" });

@@ -183,6 +183,15 @@ export default function Browse() {
   // Add to wishlist mutation
   const addToWishlistMutation = useMutation({
     mutationFn: async (productId: string) => {
+      // First check if product is already in user's collection
+      const response = await apiRequest(`/api/user-products/check/${productId}`, {
+        method: "GET"
+      });
+      
+      if (response.inCollection) {
+        throw new Error("ALREADY_IN_COLLECTION");
+      }
+      
       return await apiRequest(`/api/user-products`, {
         method: "POST",
         body: {
@@ -200,11 +209,19 @@ export default function Browse() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Failed to Add",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message === "ALREADY_IN_COLLECTION") {
+        toast({
+          title: "Already in Collection",
+          description: "This whisky is already in your personal collection.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Failed to Add",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   });
 
