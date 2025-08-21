@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Search, 
   Filter, 
@@ -19,7 +20,8 @@ import {
   Loader2,
   Building2,
   DollarSign,
-  Percent
+  Percent,
+  Plus
 } from "lucide-react";
 import type { Product, Distillery, User } from "@shared/schema";
 
@@ -455,23 +457,37 @@ export default function Browse() {
 
                       {/* Actions */}
                       <div className="lg:col-span-1 flex flex-col gap-2">
-                        <Button 
-                          size="sm"
-                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
-                          data-testid={`button-add-to-journal-${product.id}`}
-                        >
-                          Add to Journal
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm"
+                              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
+                              data-testid={`button-add-to-journal-${product.id}`}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Add to Journal</p>
+                          </TooltipContent>
+                        </Tooltip>
                         {product.productUrl && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50"
-                            onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
-                            data-testid={`button-view-product-${product.id}`}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
+                                onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
+                                data-testid={`button-view-product-${product.id}`}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Visit Website</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </div>
