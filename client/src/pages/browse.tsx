@@ -189,32 +189,38 @@ export default function Browse() {
     }
   });
 
-  // Add to wishlist mutation
-  const addToWishlistMutation = useMutation({
+  // Toggle wishlist mutation
+  const toggleWishlistMutation = useMutation({
     mutationFn: async (productId: string) => {
-      // First check if product is already in user's collection
-      const response = await apiRequest(`/api/user-products/check/${productId}`, {
-        method: "GET"
-      });
+      const userProduct = (userProducts as any[]).find((up: any) => up.productId === productId);
       
-      if (response.inCollection) {
+      if (userProduct && userProduct.wishlist) {
+        // Remove from wishlist
+        return await apiRequest(`/api/user-products/${userProduct.id}`, {
+          method: "DELETE"
+        });
+      } else if (userProduct && userProduct.owned) {
+        // Already in collection, can't add to wishlist
         throw new Error("ALREADY_IN_COLLECTION");
+      } else {
+        // Add to wishlist
+        return await apiRequest(`/api/user-products`, {
+          method: "POST",
+          body: {
+            productId,
+            wishlist: true,
+            owned: false
+          }
+        });
       }
-      
-      return await apiRequest(`/api/user-products`, {
-        method: "POST",
-        body: {
-          productId,
-          wishlist: true,
-          owned: false
-        }
-      });
     },
     onSuccess: (_, productId) => {
       const product = products?.find((p: Product) => p.id === productId);
+      const wasInWishlist = isInWishlist(productId);
+      
       toast({
-        title: "Added to Wishlist",
-        description: `${product?.name} has been added to your wishlist!`,
+        title: wasInWishlist ? "Removed from Wishlist" : "Added to Wishlist",
+        description: `${product?.name} has been ${wasInWishlist ? "removed from" : "added to"} your wishlist!`,
       });
       // Refresh user products to update UI
       queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
@@ -228,11 +234,41 @@ export default function Browse() {
         });
       } else {
         toast({
-          title: "Failed to Add",
+          title: "Failed to Update",
           description: error.message,
           variant: "destructive",
         });
       }
+    }
+  });
+
+  // Remove from collection mutation
+  const removeFromCollectionMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const userProduct = (userProducts as any[]).find((up: any) => up.productId === productId && up.owned);
+      if (!userProduct) {
+        throw new Error("Product not found in collection");
+      }
+      
+      return await apiRequest(`/api/user-products/${userProduct.id}`, {
+        method: "DELETE"
+      });
+    },
+    onSuccess: (_, productId) => {
+      const product = products?.find((p: Product) => p.id === productId);
+      toast({
+        title: "Removed from Collection",
+        description: `${product?.name} has been removed from your collection.`,
+      });
+      // Refresh user products to update UI
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Remove",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   });
 
@@ -260,8 +296,16 @@ export default function Browse() {
     });
   };
 
-  const handleAddToWishlist = (productId: string) => {
-    addToWishlistMutation.mutate(productId);
+  const handleToggleWishlist = (productId: string) => {
+    toggleWishlistMutation.mutate(productId);
+  };
+
+  const handleToggleCollection = (productId: string) => {
+    if (isInCollection(productId)) {
+      removeFromCollectionMutation.mutate(productId);
+    } else {
+      handleAddToCollection(products.find(p => p.id === productId)!);
+    }
   };
 
   // Helper function to check if product is in wishlist
@@ -597,14 +641,17 @@ export default function Browse() {
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm"
-                              onClick={() => handleAddToWishlist(product.id)}
+                              onClick={() => handleToggleWishlist(product.id)}
+                              disabled={isInCollection(product.id)}
                               variant="outline"
                               className={`border-2 w-8 h-8 p-0 ${
-                                isInWishlist(product.id)
+                                isInCollection(product.id)
+                                  ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                                  : isInWishlist(product.id)
                                   ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
                                   : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
                               }`}
-                              data-testid={`button-add-to-wishlist-${product.id}`}
+                              data-testid={`button-toggle-wishlist-${product.id}`}
                             >
                               <Heart 
                                 className={`h-4 w-4 ${
@@ -616,7 +663,14 @@ export default function Browse() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{isInWishlist(product.id) ? "Whisky in wishlist" : "Add to Wishlist"}</p>
+                            <p>
+                              {isInCollection(product.id) 
+                                ? "Already in collection"
+                                : isInWishlist(product.id) 
+                                ? "Remove from wishlist" 
+                                : "Add to wishlist"
+                              }
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                         
@@ -624,14 +678,13 @@ export default function Browse() {
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm"
-                              onClick={isInCollection(product.id) ? undefined : () => handleAddToCollection(product)}
-                              disabled={isInCollection(product.id)}
+                              onClick={() => handleToggleCollection(product.id)}
                               className={`w-8 h-8 p-0 shadow-lg border-0 ${
                                 isInCollection(product.id)
-                                  ? "bg-green-500 hover:bg-green-500 text-white cursor-default"
+                                  ? "bg-green-500 hover:bg-green-600 text-white"
                                   : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                               }`}
-                              data-testid={`button-add-to-journal-${product.id}`}
+                              data-testid={`button-toggle-collection-${product.id}`}
                             >
                               {isInCollection(product.id) ? (
                                 <Check className="h-4 w-4" />
@@ -641,7 +694,7 @@ export default function Browse() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{isInCollection(product.id) ? "In your collection" : "Add to Journal"}</p>
+                            <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
                           </TooltipContent>
                         </Tooltip>
                         

@@ -458,6 +458,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/user-products/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userProduct = await storage.getUserProduct(req.session.userId, ""); // We'll need to get by ID instead
+      // For now, we'll implement a simple approach - get all user products and find the one to delete
+      const userProducts = await storage.getUserProducts(req.session.userId);
+      const productToDelete = userProducts.find(up => up.id === req.params.id);
+      
+      if (!productToDelete) {
+        return res.status(404).json({ message: "Product not found in your collection" });
+      }
+
+      await storage.deleteUserProduct(req.params.id);
+      res.json({ message: "Product removed successfully" });
+    } catch (error) {
+      console.error("Delete user product error:", error);
+      res.status(500).json({ message: "Failed to remove product" });
+    }
+  });
+
   // Admin middleware
   const requireAdmin = async (req: any, res: any, next: any) => {
     if (!req.session.userId) {

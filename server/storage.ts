@@ -53,6 +53,7 @@ export interface IStorage {
   getUserProduct(userId: string, productId: string): Promise<UserProduct | undefined>;
   createUserProduct(userProduct: InsertUserProduct): Promise<UserProduct>;
   updateUserProduct(id: string, userProduct: Partial<InsertUserProduct>): Promise<UserProduct | undefined>;
+  deleteUserProduct(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +258,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userProducts.id, id))
       .returning();
     return userProduct || undefined;
+  }
+
+  async deleteUserProduct(id: string): Promise<boolean> {
+    const result = await db
+      .delete(userProducts)
+      .where(eq(userProducts.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 
@@ -586,6 +595,10 @@ export class MemStorage implements IStorage {
     const updated: UserProduct = { ...existing, ...updates };
     this.userProducts.set(id, updated);
     return updated;
+  }
+
+  async deleteUserProduct(id: string): Promise<boolean> {
+    return this.userProducts.delete(id);
   }
 }
 
