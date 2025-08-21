@@ -365,119 +365,115 @@ export default function Browse() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="space-y-4">
             {filteredProducts.map((product) => {
               const distillery = product.distillery ? distilleryMap[product.distillery] : null;
               
               return (
                 <Card 
                   key={product.id} 
-                  className="group hover:shadow-2xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0 overflow-hidden"
+                  className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
                   data-testid={`card-product-${product.id}`}
                 >
-                  <CardHeader className="bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-100">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 flex-1">
-                        <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors line-clamp-2">
-                          {product.name}
-                        </CardTitle>
-                        {distillery && (
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                      {/* Main Info */}
+                      <div className="lg:col-span-4 space-y-3">
+                        <div>
+                          <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
+                            {product.name}
+                          </h3>
+                          {distillery && (
+                            <div className="flex items-center text-slate-600 mb-2">
+                              <Building2 className="h-4 w-4 mr-2 text-amber-600" />
+                              <span className="font-medium">{distillery.name}</span>
+                            </div>
+                          )}
+                          {distillery?.region && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
+                              {distillery.region}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Technical Details */}
+                      <div className="lg:col-span-3 space-y-2">
+                        {product.abvPercent && (
                           <div className="flex items-center text-sm text-slate-600">
-                            <Building2 className="h-4 w-4 mr-1 text-amber-600" />
-                            {distillery.name}
+                            <Percent className="h-4 w-4 mr-2 text-amber-600" />
+                            <span className="font-medium">{product.abvPercent}% ABV</span>
                           </div>
                         )}
-                        {distillery?.region && (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                            {distillery.region}
-                          </Badge>
+                        {product.volumeCl && (
+                          <div className="text-sm text-slate-600">
+                            <span className="font-medium">Volume:</span> {product.volumeCl}cl
+                          </div>
+                        )}
+                        {product.filtration && (
+                          <div className="text-sm text-slate-600">
+                            <span className="font-medium">Filtration:</span> {product.filtration}
+                          </div>
+                        )}
+                        {product.price && (
+                          <div className="flex items-center text-sm text-slate-600">
+                            <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                            <span className="font-medium">£{product.price}</span>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="p-6 space-y-4">
-                    {/* Technical Details */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {product.abvPercent && (
-                        <div className="flex items-center text-sm">
-                          <Percent className="h-4 w-4 mr-2 text-amber-600" />
-                          <span className="font-medium">{product.abvPercent}% ABV</span>
-                        </div>
-                      )}
-                      {product.price && (
-                        <div className="flex items-center text-sm">
-                          <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                          <span className="font-medium">£{product.price}</span>
-                        </div>
-                      )}
-                    </div>
 
-                    {product.volumeCl && (
-                      <p className="text-sm text-slate-600">
-                        <span className="font-medium">Volume:</span> {product.volumeCl}cl
-                      </p>
-                    )}
+                      {/* Description & Tasting Notes */}
+                      <div className="lg:col-span-4 space-y-3">
+                        {product.description && (
+                          <p className="text-sm text-slate-600 line-clamp-2">
+                            {product.description}
+                          </p>
+                        )}
+                        
+                        {/* Condensed Tasting Notes */}
+                        {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
+                          <div className="space-y-1">
+                            {product.tastingNose && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
+                              </p>
+                            )}
+                            {product.tastingTaste && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
+                              </p>
+                            )}
+                            {product.tastingFinish && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                    {product.filtration && (
-                      <p className="text-sm text-slate-600">
-                        <span className="font-medium">Filtration:</span> {product.filtration}
-                      </p>
-                    )}
-
-                    {product.description && (
-                      <>
-                        <Separator />
-                        <p className="text-sm text-slate-600 line-clamp-3">
-                          {product.description}
-                        </p>
-                      </>
-                    )}
-
-                    {/* Tasting Notes */}
-                    {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
-                      <>
-                        <Separator />
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-slate-800">Tasting Notes</h4>
-                          {product.tastingNose && (
-                            <p className="text-sm text-slate-600">
-                              <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose}
-                            </p>
-                          )}
-                          {product.tastingTaste && (
-                            <p className="text-sm text-slate-600">
-                              <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste}
-                            </p>
-                          )}
-                          {product.tastingFinish && (
-                            <p className="text-sm text-slate-600">
-                              <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish}
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                      <Button 
-                        className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
-                        data-testid={`button-add-to-journal-${product.id}`}
-                      >
-                        Add to Journal
-                      </Button>
-                      {product.productUrl && (
-                        <Button
-                          variant="outline"
-                          className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50"
-                          onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
-                          data-testid={`button-view-product-${product.id}`}
+                      {/* Actions */}
+                      <div className="lg:col-span-1 flex flex-col gap-2">
+                        <Button 
+                          size="sm"
+                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
+                          data-testid={`button-add-to-journal-${product.id}`}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View
+                          Add to Journal
                         </Button>
-                      )}
+                        {product.productUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50"
+                            onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
+                            data-testid={`button-view-product-${product.id}`}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
