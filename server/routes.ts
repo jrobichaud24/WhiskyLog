@@ -7,6 +7,7 @@ import {
   insertUserSchema,
   insertDistillerySchema,
   insertProductSchema,
+  insertUserProductSchema,
   bulkDistillerySchema,
   bulkProductSchema
 } from "@shared/schema";
@@ -393,6 +394,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userWhisky);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user whisky" });
+    }
+  });
+
+  // User products endpoints
+  app.get("/api/user-products", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userProducts = await storage.getUserProducts(req.session.userId);
+      res.json(userProducts);
+    } catch (error) {
+      console.error("Get user products error:", error);
+      res.status(500).json({ message: "Failed to fetch user products" });
+    }
+  });
+
+  app.post("/api/user-products", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const validatedData = insertUserProductSchema.parse({
+        ...req.body,
+        userId: req.session.userId,
+      });
+
+      // Check if user already has this product in collection
+      const existingUserProduct = await storage.getUserProduct(req.session.userId, validatedData.productId);
+      if (existingUserProduct) {
+        return res.status(400).json({ message: "Product already in your collection" });
+      }
+
+      const userProduct = await storage.createUserProduct(validatedData);
+      res.status(201).json(userProduct);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create user product error:", error);
+      res.status(500).json({ message: "Failed to add product to collection" });
     }
   });
 

@@ -3,10 +3,11 @@ import {
   type Whisky, type InsertWhisky, 
   type UserWhisky, type InsertUserWhisky,
   type Distillery, type InsertDistillery,
-  type Product, type InsertProduct
+  type Product, type InsertProduct,
+  type UserProduct, type InsertUserProduct
 } from "@shared/schema";
 import { db } from "./db";
-import { users, whiskies, userWhiskies, distilleries, products } from "@shared/schema";
+import { users, whiskies, userWhiskies, distilleries, products, userProducts } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
@@ -46,6 +47,12 @@ export interface IStorage {
   getUserWhisky(userId: string, whiskyId: string): Promise<UserWhisky | undefined>;
   createUserWhisky(userWhisky: InsertUserWhisky): Promise<UserWhisky>;
   updateUserWhisky(id: string, userWhisky: Partial<InsertUserWhisky>): Promise<UserWhisky | undefined>;
+  
+  // User product operations
+  getUserProducts(userId: string): Promise<UserProduct[]>;
+  getUserProduct(userId: string, productId: string): Promise<UserProduct | undefined>;
+  createUserProduct(userProduct: InsertUserProduct): Promise<UserProduct>;
+  updateUserProduct(id: string, userProduct: Partial<InsertUserProduct>): Promise<UserProduct | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -221,6 +228,36 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return userWhisky || undefined;
   }
+
+  // User product operations
+  async getUserProducts(userId: string): Promise<UserProduct[]> {
+    return await db.select().from(userProducts).where(eq(userProducts.userId, userId));
+  }
+
+  async getUserProduct(userId: string, productId: string): Promise<UserProduct | undefined> {
+    const [userProduct] = await db
+      .select()
+      .from(userProducts)
+      .where(and(eq(userProducts.userId, userId), eq(userProducts.productId, productId)));
+    return userProduct || undefined;
+  }
+
+  async createUserProduct(insertUserProduct: InsertUserProduct): Promise<UserProduct> {
+    const [userProduct] = await db
+      .insert(userProducts)
+      .values(insertUserProduct)
+      .returning();
+    return userProduct;
+  }
+
+  async updateUserProduct(id: string, updates: Partial<InsertUserProduct>): Promise<UserProduct | undefined> {
+    const [userProduct] = await db
+      .update(userProducts)
+      .set(updates)
+      .where(eq(userProducts.id, id))
+      .returning();
+    return userProduct || undefined;
+  }
 }
 
 // Keep MemStorage class for fallback/testing
@@ -228,11 +265,17 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private whiskies: Map<string, Whisky>;
   private userWhiskies: Map<string, UserWhisky>;
+  private distilleries: Map<string, Distillery>;
+  private products: Map<string, Product>;
+  private userProducts: Map<string, UserProduct>;
 
   constructor() {
     this.users = new Map();
     this.whiskies = new Map();
     this.userWhiskies = new Map();
+    this.distilleries = new Map();
+    this.products = new Map();
+    this.userProducts = new Map();
     
     // Initialize with some sample whiskies
     this.initializeSampleWhiskies();
@@ -505,6 +548,43 @@ export class MemStorage implements IStorage {
 
     const updated: UserWhisky = { ...existing, ...updates };
     this.userWhiskies.set(id, updated);
+    return updated;
+  }
+
+  // User product operations (stub implementations)
+  async getUserProducts(userId: string): Promise<UserProduct[]> {
+    return Array.from(this.userProducts.values()).filter(
+      (userProduct) => userProduct.userId === userId
+    );
+  }
+
+  async getUserProduct(userId: string, productId: string): Promise<UserProduct | undefined> {
+    return Array.from(this.userProducts.values()).find(
+      (userProduct) => userProduct.userId === userId && userProduct.productId === productId
+    );
+  }
+
+  async createUserProduct(insertUserProduct: InsertUserProduct): Promise<UserProduct> {
+    const id = randomUUID();
+    const userProduct: UserProduct = {
+      ...insertUserProduct,
+      id,
+      createdAt: new Date(),
+      rating: insertUserProduct.rating || null,
+      tastingNotes: insertUserProduct.tastingNotes || null,
+      owned: insertUserProduct.owned || false,
+      wishlist: insertUserProduct.wishlist || false,
+    };
+    this.userProducts.set(id, userProduct);
+    return userProduct;
+  }
+
+  async updateUserProduct(id: string, updates: Partial<InsertUserProduct>): Promise<UserProduct | undefined> {
+    const existing = this.userProducts.get(id);
+    if (!existing) return undefined;
+
+    const updated: UserProduct = { ...existing, ...updates };
+    this.userProducts.set(id, updated);
     return updated;
   }
 }

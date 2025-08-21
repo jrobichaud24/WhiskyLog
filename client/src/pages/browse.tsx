@@ -10,6 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Search, 
   Filter, 
@@ -21,13 +24,19 @@ import {
   Building2,
   DollarSign,
   Percent,
-  Plus
+  Plus,
+  Star
 } from "lucide-react";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Browse() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [tastingNotes, setTastingNotes] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // User authentication
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -137,6 +146,62 @@ export default function Browse() {
   };
 
   const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minPrice || maxPrice || minABV || maxABV || (selectedRegion !== "all");
+
+  // Add to collection mutation
+  const addToCollectionMutation = useMutation({
+    mutationFn: async (data: { productId: string; rating: number; tastingNotes: string }) => {
+      return await apiRequest(`/api/user-products`, {
+        method: "POST",
+        body: {
+          productId: data.productId,
+          rating: data.rating,
+          tastingNotes: data.tastingNotes,
+          owned: true
+        }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to Collection",
+        description: `${selectedProduct?.name} has been added to your personal collection!`,
+      });
+      setIsDialogOpen(false);
+      setSelectedProduct(null);
+      setRating(0);
+      setTastingNotes("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleAddToCollection = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDialogOpen(true);
+    setRating(0);
+    setTastingNotes("");
+  };
+
+  const handleSubmitCollection = () => {
+    if (!selectedProduct || rating === 0) {
+      toast({
+        title: "Rating Required",
+        description: "Please provide a rating before adding to your collection.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    addToCollectionMutation.mutate({
+      productId: selectedProduct.id,
+      rating,
+      tastingNotes
+    });
+  };
 
   if (userLoading) {
     return (
@@ -461,6 +526,7 @@ export default function Browse() {
                           <TooltipTrigger asChild>
                             <Button 
                               size="sm"
+                              onClick={() => handleAddToCollection(product)}
                               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0 w-8 h-8 p-0"
                               data-testid={`button-add-to-journal-${product.id}`}
                             >
@@ -498,6 +564,85 @@ export default function Browse() {
           </div>
         )}
       </main>
+
+      {/* Add to Collection Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add to Your Collection</DialogTitle>
+            <DialogDescription>
+              {selectedProduct && (
+                <>Add <strong>{selectedProduct.name}</strong> to your personal whisky journal with a rating and notes.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Rating Section */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Your Rating *</Label>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className="p-1 hover:scale-110 transition-transform"
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(star)}
+                    data-testid={`star-${star}`}
+                  >
+                    <Star
+                      className={`h-6 w-6 transition-colors ${
+                        star <= (hoverRating || rating)
+                          ? "fill-amber-400 text-amber-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-sm text-gray-600">
+                  {rating > 0 ? `${rating}/5 stars` : "Click to rate"}
+                </span>
+              </div>
+            </div>
+
+            {/* Tasting Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="tastingNotes" className="text-sm font-medium">
+                Personal Tasting Notes (Optional)
+              </Label>
+              <Textarea
+                id="tastingNotes"
+                placeholder="Share your thoughts about this whisky... aroma, taste, finish, or any personal observations."
+                value={tastingNotes}
+                onChange={(e) => setTastingNotes(e.target.value)}
+                className="resize-none"
+                rows={3}
+                data-testid="textarea-tasting-notes"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              data-testid="button-cancel-add"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitCollection}
+              disabled={rating === 0 || addToCollectionMutation.isPending}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+              data-testid="button-confirm-add"
+            >
+              {addToCollectionMutation.isPending ? "Adding..." : "Add to Collection"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

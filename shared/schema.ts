@@ -71,6 +71,18 @@ export const userWhiskies = pgTable("user_whiskies", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User products table - for tracking user's personal whisky collection with products
+export const userProducts = pgTable("user_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  rating: integer("rating"), // 1-5 scale
+  tastingNotes: text("tasting_notes"),
+  owned: boolean("owned").default(false),
+  wishlist: boolean("wishlist").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Schema validations
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -102,6 +114,11 @@ export const insertUserWhiskySchema = createInsertSchema(userWhiskies).omit({
   createdAt: true,
 });
 
+export const insertUserProductSchema = createInsertSchema(userProducts).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Bulk import schemas
 export const bulkDistillerySchema = z.array(insertDistillerySchema);
 export const bulkProductSchema = z.array(insertProductSchema);
@@ -121,3 +138,6 @@ export type Whisky = typeof whiskies.$inferSelect;
 
 export type InsertUserWhisky = z.infer<typeof insertUserWhiskySchema>;
 export type UserWhisky = typeof userWhiskies.$inferSelect;
+
+export type InsertUserProduct = z.infer<typeof insertUserProductSchema>;
+export type UserProduct = typeof userProducts.$inferSelect;
