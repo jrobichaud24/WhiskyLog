@@ -31,10 +31,14 @@ export default function Reviews() {
     comment: "",
   });
 
-  const { data: user } = useQuery<UserType>({
+  const { data: user, isLoading: userLoading } = useQuery<UserType>({
     queryKey: ["/api/auth/user"],
     retry: false
   });
+
+  // Debug logging
+  console.log('User data:', user);
+  console.log('User loading:', userLoading);
 
   const { data: reviews = [], isLoading, refetch } = useQuery<AppReviewWithUser[]>({
     queryKey: ["/api/reviews"],
@@ -151,7 +155,9 @@ export default function Reviews() {
               <Dialog 
                 open={isDialogOpen} 
                 onOpenChange={(open) => {
-                  if (open && !user) {
+                  console.log('Dialog onOpenChange called with:', open, 'User:', user, 'UserLoading:', userLoading);
+                  if (open && !userLoading && !user) {
+                    console.log('Redirecting to login because user is not authenticated');
                     toast({
                       title: "Login Required",
                       description: "Please log in to write a review",
