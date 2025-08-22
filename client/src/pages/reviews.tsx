@@ -32,7 +32,7 @@ export default function Reviews() {
   });
 
   const { data: user } = useQuery<UserType>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/auth/user"],
     retry: false
   });
 
@@ -139,27 +139,40 @@ export default function Reviews() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {user && (
-          <div className="mb-8">
-            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-              <CardContent className="p-6 text-center">
-                <MessageSquare className="h-12 w-12 text-amber-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">Share Your Experience</h3>
-                <p className="text-slate-600 mb-4">
-                  Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
-                </p>
+        <div className="mb-8">
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+            <CardContent className="p-6 text-center">
+              <MessageSquare className="h-12 w-12 text-amber-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">Share Your Experience</h3>
+              <p className="text-slate-600 mb-4">
+                Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
+              </p>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                    data-testid="button-write-review"
+                    onClick={() => {
+                      if (!user) {
+                        toast({
+                          title: "Login Required",
+                          description: "Please log in to write a review",
+                          variant: "destructive",
+                        });
+                        setTimeout(() => {
+                          window.location.href = '/login';
+                        }, 1000);
+                        return;
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Write a Review
+                  </Button>
+                </DialogTrigger>
                 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                      data-testid="button-write-review"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Write a Review
-                    </Button>
-                  </DialogTrigger>
-                  
+                {user && (
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle className="font-playfair text-2xl text-slate-800">Write Your Review</DialogTitle>
@@ -225,11 +238,11 @@ export default function Reviews() {
                       </div>
                     </form>
                   </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                )}
+              </Dialog>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Reviews List */}
         <div className="space-y-6">
