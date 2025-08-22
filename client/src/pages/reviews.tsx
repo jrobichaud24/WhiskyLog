@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Star, MessageSquare, User, Calendar, Plus } from "lucide-react";
@@ -23,7 +24,7 @@ interface AppReviewWithUser extends AppReview {
 
 export default function Reviews() {
   const { toast } = useToast();
-  const [showForm, setShowForm] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     rating: 5,
     title: "",
@@ -51,7 +52,7 @@ export default function Reviews() {
         title: "Review Submitted",
         description: "Thank you for your feedback!",
       });
-      setShowForm(false);
+      setIsDialogOpen(false);
       setFormData({ rating: 5, title: "", comment: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/reviews"] });
     },
@@ -140,92 +141,93 @@ export default function Reviews() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {user && (
           <div className="mb-8">
-            {!showForm ? (
-              <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-                <CardContent className="p-6 text-center">
-                  <MessageSquare className="h-12 w-12 text-amber-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-slate-800 mb-2">Share Your Experience</h3>
-                  <p className="text-slate-600 mb-4">
-                    Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
-                  </p>
-                  <Button 
-                    onClick={() => setShowForm(true)}
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                    data-testid="button-write-review"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Write a Review
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-white shadow-xl">
-                <CardHeader>
-                  <CardTitle className="font-playfair text-2xl text-slate-800">Write Your Review</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Rating
-                      </label>
-                      {renderStars(formData.rating, true, (rating) => 
-                        setFormData(prev => ({ ...prev, rating }))
-                      )}
-                    </div>
+            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+              <CardContent className="p-6 text-center">
+                <MessageSquare className="h-12 w-12 text-amber-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">Share Your Experience</h3>
+                <p className="text-slate-600 mb-4">
+                  Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
+                </p>
+                
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                      data-testid="button-write-review"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Write a Review
+                    </Button>
+                  </DialogTrigger>
+                  
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="font-playfair text-2xl text-slate-800">Write Your Review</DialogTitle>
+                    </DialogHeader>
                     
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
-                        Review Title
-                      </label>
-                      <Input
-                        id="title"
-                        type="text"
-                        value={formData.title}
-                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Summarize your experience..."
-                        required
-                        data-testid="input-review-title"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="comment" className="block text-sm font-medium text-slate-700 mb-2">
-                        Your Review
-                      </label>
-                      <Textarea
-                        id="comment"
-                        value={formData.comment}
-                        onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
-                        placeholder="Share your detailed thoughts about The Dram Journal..."
-                        rows={4}
-                        required
-                        data-testid="textarea-review-comment"
-                      />
-                    </div>
-                    
-                    <div className="flex space-x-4">
-                      <Button
-                        type="submit"
-                        disabled={createReviewMutation.isPending}
-                        className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                        data-testid="button-submit-review"
-                      >
-                        {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowForm(false)}
-                        data-testid="button-cancel-review"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Rating
+                        </label>
+                        {renderStars(formData.rating, true, (rating) => 
+                          setFormData(prev => ({ ...prev, rating }))
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
+                          Review Title
+                        </label>
+                        <Input
+                          id="title"
+                          type="text"
+                          value={formData.title}
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Summarize your experience..."
+                          required
+                          data-testid="input-review-title"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="comment" className="block text-sm font-medium text-slate-700 mb-2">
+                          Your Review
+                        </label>
+                        <Textarea
+                          id="comment"
+                          value={formData.comment}
+                          onChange={(e) => setFormData(prev => ({ ...prev, comment: e.target.value }))}
+                          placeholder="Share your detailed thoughts about The Dram Journal..."
+                          rows={4}
+                          required
+                          data-testid="textarea-review-comment"
+                        />
+                      </div>
+                      
+                      <div className="flex space-x-4">
+                        <Button
+                          type="submit"
+                          disabled={createReviewMutation.isPending}
+                          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                          data-testid="button-submit-review"
+                        >
+                          {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsDialogOpen(false)}
+                          data-testid="button-cancel-review"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
           </div>
         )}
 
