@@ -7,8 +7,8 @@ const regionDisplayOrder = [
   "Highland",
   "Speyside", 
   "Islay",
-  "Lowlands",
-  "Islands",
+  "Lowland",
+  "Island",
   "Campbeltown",
 ];
 
