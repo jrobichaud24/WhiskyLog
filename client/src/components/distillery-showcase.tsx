@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import type { Distillery } from "@shared/schema";
 import highlandImage from "@assets/highlands_1755825461469.webp";
 import speysideImage from "@assets/speyside_1755825514874.webp";
+import islayImage from "@assets/islay_1755825546575.webp";
 
 const regionDisplayOrder = [
   "Highland",
@@ -91,6 +92,12 @@ export default function DistilleryShowcase() {
                     <img 
                       src={speysideImage} 
                       alt="Speyside Region castle and landscape" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : region.region === "Islay" ? (
+                    <img 
+                      src={islayImage} 
+                      alt="Islay coastal cliffs and ocean" 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
