@@ -19,6 +19,10 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
+  // Get redirect URL from query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTo = urlParams.get('redirect') || '/dashboard';
+  
   const {
     register,
     handleSubmit,
@@ -38,11 +42,11 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have been logged in successfully.",
       });
-      // Redirect admin users to admin panel, regular users to dashboard
-      if (user?.isAdmin) {
+      // Redirect admin users to admin panel, or back to the page they came from
+      if (user?.isAdmin && redirectTo === '/dashboard') {
         setLocation("/admin");
       } else {
-        setLocation("/dashboard");
+        setLocation(redirectTo);
       }
     },
     onError: (error: Error) => {

@@ -161,7 +161,7 @@ export default function Reviews() {
                           variant: "destructive",
                         });
                         setTimeout(() => {
-                          window.location.href = '/login';
+                          window.location.href = '/login?redirect=' + encodeURIComponent('/reviews');
                         }, 1000);
                         return;
                       }
