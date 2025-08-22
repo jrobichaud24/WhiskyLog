@@ -1,208 +1,64 @@
 # Overview
 
-The Dram Journal is a Progressive Web Application (PWA) designed for whisky enthusiasts to track, rate, and discover exceptional single malt scotch whiskies. The application allows users to build personal collections, write detailed tasting notes, rate whiskies, and connect with fellow enthusiasts through a community-driven platform. The application will be hosted at www.thedramjournal.com.
-
-The app is built as a full-stack TypeScript application with a React frontend and Express backend, designed to work both online and offline with PWA capabilities.
+The Dram Journal is a Progressive Web Application (PWA) designed for whisky enthusiasts to track, rate, and discover exceptional single malt scotch whiskies. The application allows users to build personal collections, write detailed tasting notes, rate whiskies, and connect with fellow enthusiasts through a community-driven platform. The application is built as a full-stack TypeScript application with a React frontend and Express backend, designed to work both online and offline with PWA capabilities, and will be hosted at www.thedramjournal.com.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes
-
-## Progressive Web App (PWA) Implementation (August 22, 2025)
-- Added comprehensive Progressive Web App capabilities for offline use and app installation
-- Created web app manifest with proper metadata, icons, and screenshots configuration
-- Implemented service worker for offline caching of static files and API responses
-- Added PWA install prompt component with elegant UI and user-friendly messaging
-- Enhanced HTML with PWA meta tags for mobile and Apple device compatibility
-- Configured automatic service worker registration and update handling
-- Added background sync capabilities for data synchronization when connection restored
-- Implemented push notification support for whisky recommendations and updates
-- Users can now install the app on their devices for native app-like experience
-- App works offline with cached content and automatically syncs when back online
-
-## Persistent Login Sessions Implementation (August 22, 2025)
-- Added comprehensive persistent session management for improved user experience
-- Enhanced login form with "Keep me signed in for 30 days" checkbox option
-- Implemented backend session duration logic based on user preference:
-  * Standard login: 24-hour session expiration
-  * Remember Me checked: 30-day session expiration with rolling refresh
-- Sessions automatically extend on user activity to maintain login state
-- Server-side session configuration with secure cookie settings
-- Updated login flow to support redirect parameters for seamless navigation
-- Fixed authentication endpoint issues ensuring reliable user state management
-
-## App Reviews System Implementation (August 22, 2025)
-- Created complete app reviews system with database schema and API endpoints
-- Built beautiful modal-based review submission with star ratings and comments
-- Added authentication flow for review submission with smart login redirects
-- Enhanced reviews page with average rating display and user review listing
-- Fixed JSON parsing and authentication timing issues for seamless user experience
-- Users can view all reviews and submit one review per account
-- Integrated with existing authentication system for secure review management
-
-## Scottish Region Images Implementation (August 22, 2025)
-- Enhanced "Journey Through Scotland's Finest" section with authentic landscape images for all 6 whisky regions
-- Added Highland dramatic mountains and valleys image
-- Added Speyside historic castle with bridge image  
-- Added Islay stunning coastal cliffs and ocean image
-- Added Lowland peaceful rolling hills with winding river image
-- Added Island majestic mountains with coastal waters image
-- Added Campbeltown lighthouse and coastal cliffs image
-- Updated region names from "Lowlands" to "Lowland" and "Islands" to "Island" to match database
-- All region tiles now feature beautiful authentic Scottish landscapes that represent each region's character
-- Images scale smoothly on hover with proper visual transitions
-
-## Collection Page Implementation (August 21, 2025)
-- Created dedicated collection page (/collection) displaying user's owned whiskies with detailed information
-- Added comprehensive whisky display cards showing product details, ratings, tasting notes, and collection dates
-- Implemented remove functionality with proper ownership verification and database deletion
-- Enhanced delete API endpoint with security checks to prevent unauthorized deletions
-- Fixed React hooks order violations and component lifecycle issues for stable rendering
-- Added proper authentication redirects and loading states for better user experience
-- Connected "View Collection" button from dashboard to navigate to new collection page
-- Styled with consistent Scottish Highland design theme using amber accents and premium card layouts
-- Collection page shows empty state when no whiskies are owned, encouraging users to start browsing
-- Successfully tested delete functionality - items are properly removed from database and UI updates immediately
-
-## Dynamic Distillery Showcase Implementation (August 20, 2025)
-- Updated "Journey Through Scotland's Finest" section to display real distillery counts from database
-- Replaced hardcoded region data with dynamic queries fetching actual distillery data
-- Added React Query integration to fetch distilleries and calculate regional distribution
-- Implemented proper loading states with amber spinner matching brand colors
-- Enhanced region counting logic with proper grammar (1 Distillery vs X Distilleries)
-- Region display shows: Highland Region, Speyside, Islay, and Lowlands with accurate counts
-- Successfully connected home page "Explore Full Collection" button to discover page navigation
-
-## Products Table Schema Update (August 20, 2025)
-- Completely redesigned products table schema to match user requirements
-- Updated fields: distillery (linked to distilleries table), name, price, abv_percent, volume_cl, filtration, appearance, description, tasting_nose, tasting_taste, tasting_finish, product_url
-- Replaced old fields (age, cask_type, vintage, limited_edition, availability) with new specialized tasting and product information fields
-- Updated admin panel AddProductForm component with comprehensive form fields for all new schema properties
-- Updated product display cards to show new fields (ABV%, volume, filtration, product URL links)
-- Successfully migrated database using direct SQL recreation to avoid complex column renaming issues
-- All product management functionality now uses updated schema structure
-
-## User Administration System Implementation (August 20, 2025)
-- Added `isAdmin` boolean flag to users table with default value of false
-- Created admin middleware to protect administrative routes from unauthorized access
-- Implemented API endpoint `/api/admin/create-first-admin` for initial admin setup (only works when no admins exist)
-- Added API endpoint `/api/admin/users/:userId/admin-status` to promote/demote users to admin status
-- Enhanced storage interface with `getUsers()` method and `updateUserAdminStatus()` for admin management
-- Updated both DatabaseStorage and MemStorage implementations to handle admin functionality
-- Successfully applied database schema changes with `npm run db:push`
-- Updated dashboard to conditionally show "Database Management" section only for admin users
-- Enhanced login and signup flows to automatically redirect admin users to admin panel
-- Regular users continue to use dashboard, admin users go directly to admin management interface
-
-## Distilleries List Enhancement & Filtering System (August 19, 2025)
-- Implemented comprehensive sorting functionality: distilleries sorted by region first, then alphabetically by name
-- Added region headers with amber styling for visual organization and better navigation
-- Converted distilleries display from tile grid to organized list format with full descriptions
-- Enhanced list view to show name, region, founding year, website, country, status, and descriptions
-- Successfully imported and organized 170+ distilleries with proper validation and sorting
-- Added comprehensive filtering system with three filter categories:
-  * Region filter (Highland, Islay, Speyside, Islands, etc.)
-  * Country filter (Scotland, Japan, etc.) 
-  * Status filter (Active, Closed, etc.)
-- Implemented live count display showing filtered vs total results
-- Added "Clear Filters" button that appears when filters are active
-- Created smart empty states with different messages for "no matches" vs "no data"
-- Filters work in combination and maintain region-based sorting structure
-- Enhanced CSV parser robustness to handle missing columns and validation edge cases
-- Successfully updated database with clean distillery list (167 records) with proper data types
-
-## Authentication System Implementation (August 18, 2025)
-- Implemented complete user authentication system with PostgreSQL database
-- Created signup, login, password reset, and dashboard pages
-- Fixed API request function to properly handle POST requests with JSON bodies
-- Added session-based authentication with secure cookie handling
-- Integrated custom logo assets provided by user
-- Connected navigation "Get Started" buttons to signup flow
-- Database schema includes users table with username, email, password (hashed), and timestamps
-- All authentication pages feature Scottish Highland theme with amber/gold branding
-
-## Dashboard Design Enhancement (August 18, 2025)
-- Redesigned dashboard with premium Scottish Highland aesthetic matching main page
-- Added sophisticated dark hero header with subtle pattern overlay and large logo
-- Created elegant card designs with gradient backgrounds, glass effects, and shadows
-- Enhanced whisky discovery section with hover animations and premium styling
-- Upgraded typography using Playfair Display for refined elegance
-- Added dark theme stat cards with amber accents and better visual hierarchy
-- Improved button styling with gradients and enhanced user interactions
-- User confirmed authentication system working perfectly with all flows tested
-
-## Database Infrastructure Implementation (August 18, 2025)
-- Created comprehensive database schema for distilleries and products tables
-- Added separate distilleries table with fields for name, region, country, founding year, status, and descriptions
-- Added products table with detailed whisky information including age, ABV, cask type, vintage, pricing
-- Implemented bulk loading capabilities for spreadsheet imports via API endpoints
-- Added API routes for CRUD operations on distilleries and products
-- Created bulk import endpoints (/api/distilleries/bulk and /api/products/bulk) for spreadsheet loading
-- Updated storage interface to handle new data structures with proper validation
-- Database supports referential integrity between distilleries and products
-
-## CSV Bulk Import System (August 18, 2025)
-- Added comprehensive CSV-to-JSON conversion utility in admin panel
-- Created file upload interface with drag-and-drop for CSV and JSON files
-- Implemented smart field type conversion (numbers, booleans, defaults)
-- Added data preview functionality to verify conversions before import
-- Created dual-mode import: CSV file upload OR JSON text paste
-- Enhanced error handling with detailed validation messages
-- Added distillery ID helper for products import with visual mapping
-- Successfully tested with sample CSV files containing 5+ records each
-- CSV format supports all database fields with intelligent parsing
-
 # System Architecture
 
 ## Frontend Architecture
-- **Framework**: React 18 with TypeScript using Vite as the build tool
-- **Routing**: Wouter for client-side routing (lightweight alternative to React Router)
-- **UI Framework**: Radix UI components with Tailwind CSS for styling and shadcn/ui component system
-- **State Management**: TanStack Query (React Query) for server state management and caching
-- **Styling**: Tailwind CSS with custom CSS variables for theming, includes custom whisky-themed color palette
-- **PWA Features**: Service worker for offline functionality, web app manifest for installability
+- **Framework**: React 18 with TypeScript using Vite.
+- **Routing**: Wouter.
+- **UI Framework**: Radix UI components with Tailwind CSS for styling and shadcn/ui component system.
+- **State Management**: TanStack Query (React Query) for server state management and caching.
+- **Styling**: Tailwind CSS with custom CSS variables for theming, including a custom whisky-themed color palette.
+- **PWA Features**: Service worker for offline functionality, web app manifest for installability, offline-first architecture with local storage fallbacks, background sync, and push notifications.
 
 ## Backend Architecture
-- **Framework**: Express.js with TypeScript
-- **Database ORM**: Drizzle ORM configured for PostgreSQL
-- **Database Provider**: Neon serverless PostgreSQL (via @neondatabase/serverless)
-- **Validation**: Zod schemas for request/response validation
-- **Development**: Hot reloading with Vite integration for full-stack development
+- **Framework**: Express.js with TypeScript.
+- **Database ORM**: Drizzle ORM configured for PostgreSQL.
+- **Database Provider**: Neon serverless PostgreSQL (via @neondatabase/serverless).
+- **Validation**: Zod schemas for request/response validation.
+- **Development**: Hot reloading with Vite integration for full-stack development.
 
 ## Data Storage Solutions
-- **Primary Database**: PostgreSQL with three main entities:
-  - `users`: User authentication and profile data
-  - `whiskies`: Whisky catalog with distillery, region, age, ABV, and tasting information
-  - `user_whiskies`: Junction table linking users to whiskies with ratings, tasting notes, and collection status
-- **Session Storage**: PostgreSQL sessions using connect-pg-simple
-- **Development Storage**: In-memory storage implementation for development/testing
+- **Primary Database**: PostgreSQL with three main entities: `users` (authentication, profile), `whiskies` (catalog, details), and `user_whiskies` (junction table for ratings, notes, collection status).
+- **Session Storage**: PostgreSQL sessions using connect-pg-simple.
+- **Development Storage**: In-memory storage for development/testing.
 
 ## Authentication and Authorization
-- Session-based authentication using Express sessions
-- PostgreSQL session store for persistence
-- User management with unique username and email constraints
-- Password storage (implementation details not visible in current codebase)
-
-## External Dependencies
-- **Database**: Neon serverless PostgreSQL for production data storage
-- **Fonts**: Google Fonts integration (Playfair Display for headings, Inter for body text)
-- **Images**: Unsplash for hero section imagery
-- **Icons**: Lucide React for consistent iconography throughout the app
-- **Development Tools**: Replit-specific plugins for development environment integration
+- Session-based authentication using Express sessions with a PostgreSQL session store for persistence.
+- User management with unique username and email constraints.
+- Admin functionality including `isAdmin` flag, protected routes via admin middleware, and initial admin setup/management.
+- Persistent login sessions with configurable durations (24-hour standard, 30-day "Remember Me" with rolling refresh).
 
 ## API Structure
-- RESTful API design with `/api` prefix
-- CRUD operations for whiskies (`/api/whiskies`)
-- User-specific whisky operations (`/api/user-whiskies/:userId`)
-- Comprehensive error handling with structured JSON responses
-- Request logging middleware for debugging and monitoring
+- RESTful API design with `/api` prefix.
+- CRUD operations for whiskies and user-specific whisky operations.
+- Comprehensive error handling with structured JSON responses.
+- Request logging middleware.
+- Bulk import endpoints for distilleries and products via CSV/JSON.
 
-## Progressive Web App Features
-- Service worker for offline caching and functionality
-- Web app manifest for native app-like installation
-- Responsive design optimized for both mobile and desktop experiences
-- Offline-first architecture with local storage fallbacks
+## Key Features
+- **Progressive Web App (PWA)**: Full offline capabilities, installable as a native app on devices.
+- **Persistent Login Sessions**: Enhanced user experience with "Keep me signed in" option.
+- **App Reviews System**: Star ratings and comments with authentication.
+- **Scottish Region Imagery**: Authentic landscape images for 6 whisky regions.
+- **User Collection Page**: Dedicated page to display and manage user's owned whiskies with remove functionality.
+- **Dynamic Distillery Showcase**: Displays real distillery counts from the database, integrated with React Query.
+- **Products Table Schema**: Redesigned to include comprehensive tasting notes and product details.
+- **User Administration System**: Admin roles, protected routes, and user promotion/demotion.
+- **Distilleries List & Filtering**: Comprehensive sorting by region/name, filtering by region, country, and status, with dynamic counts and detailed descriptions.
+- **Authentication System**: Complete user signup, login, password reset, and dashboard integration with secure session handling.
+- **Dashboard Design**: Premium Scottish Highland aesthetic with sophisticated UI elements.
+- **CSV Bulk Import System**: Admin utility for CSV-to-JSON conversion with drag-and-drop, data preview, and intelligent parsing.
 
-The application follows a modern full-stack architecture with clear separation of concerns, type safety throughout the stack, and optimized for both developer experience and end-user performance.
+# External Dependencies
+
+- **Database**: Neon serverless PostgreSQL.
+- **Fonts**: Google Fonts (Playfair Display, Inter).
+- **Images**: Unsplash for hero sections.
+- **Icons**: Lucide React.
+- **Development Tools**: Replit-specific plugins.
