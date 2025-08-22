@@ -57,9 +57,9 @@ export default function Navigation() {
             <Link href="/discover" className={getNavLinkClasses("/discover")} data-testid="nav-discover">
               Discover
             </Link>
-            <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="nav-reviews">
+            <Link href="/reviews" className={getNavLinkClasses("/reviews")} data-testid="nav-reviews">
               Reviews
-            </a>
+            </Link>
             <Button 
               className="bg-amber-500 hover:bg-amber-600 text-white" 
               data-testid="button-get-started"
