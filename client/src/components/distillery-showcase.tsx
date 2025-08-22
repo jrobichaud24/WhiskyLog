@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { Distillery } from "@shared/schema";
 import highlandImage from "@assets/highlands_1755825461469.webp";
+import speysideImage from "@assets/speyside_1755825514874.webp";
 
 const regionDisplayOrder = [
   "Highland",
@@ -84,6 +85,12 @@ export default function DistilleryShowcase() {
                     <img 
                       src={highlandImage} 
                       alt="Highland Region landscape" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : region.region === "Speyside" ? (
+                    <img 
+                      src={speysideImage} 
+                      alt="Speyside Region castle and landscape" 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
