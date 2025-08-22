@@ -4,11 +4,12 @@ import {
   type UserWhisky, type InsertUserWhisky,
   type Distillery, type InsertDistillery,
   type Product, type InsertProduct,
-  type UserProduct, type InsertUserProduct
+  type UserProduct, type InsertUserProduct,
+  type AppReview, type InsertAppReview
 } from "@shared/schema";
 import { db } from "./db";
-import { users, whiskies, userWhiskies, distilleries, products, userProducts } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { users, whiskies, userWhiskies, distilleries, products, userProducts, appReviews } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
@@ -54,6 +55,11 @@ export interface IStorage {
   createUserProduct(userProduct: InsertUserProduct): Promise<UserProduct>;
   updateUserProduct(id: string, userProduct: Partial<InsertUserProduct>): Promise<UserProduct | undefined>;
   deleteUserProduct(id: string): Promise<boolean>;
+
+  // App review operations
+  getAppReviews(): Promise<AppReview[]>;
+  createAppReview(review: InsertAppReview): Promise<AppReview>;
+  getUserAppReview(userId: string): Promise<AppReview | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -266,6 +272,50 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userProducts.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  // App Reviews operations
+  async getAppReviews(): Promise<AppReview[]> {
+    const reviews = await db
+      .select({
+        id: appReviews.id,
+        userId: appReviews.userId,
+        rating: appReviews.rating,
+        title: appReviews.title,
+        comment: appReviews.comment,
+        createdAt: appReviews.createdAt,
+        updatedAt: appReviews.updatedAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        },
+      })
+      .from(appReviews)
+      .leftJoin(users, eq(appReviews.userId, users.id))
+      .orderBy(desc(appReviews.createdAt));
+    
+    return reviews.map(review => ({
+      ...review,
+      user: review.user || undefined
+    })) as AppReview[];
+  }
+
+  async createAppReview(insertAppReview: InsertAppReview): Promise<AppReview> {
+    const [review] = await db
+      .insert(appReviews)
+      .values(insertAppReview)
+      .returning();
+    return review;
+  }
+
+  async getUserAppReview(userId: string): Promise<AppReview | undefined> {
+    const [review] = await db
+      .select()
+      .from(appReviews)
+      .where(eq(appReviews.userId, userId));
+    return review || undefined;
   }
 }
 
@@ -599,6 +649,26 @@ export class MemStorage implements IStorage {
 
   async deleteUserProduct(id: string): Promise<boolean> {
     return this.userProducts.delete(id);
+  }
+
+  // App review operations (not implemented in memory storage)
+  async getAppReviews(): Promise<AppReview[]> {
+    return [];
+  }
+
+  async createAppReview(review: InsertAppReview): Promise<AppReview> {
+    const id = randomUUID();
+    const appReview: AppReview = {
+      ...review,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return appReview;
+  }
+
+  async getUserAppReview(userId: string): Promise<AppReview | undefined> {
+    return undefined;
   }
 }
 

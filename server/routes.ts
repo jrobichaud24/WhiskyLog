@@ -8,6 +8,7 @@ import {
   insertDistillerySchema,
   insertProductSchema,
   insertUserProductSchema,
+  insertAppReviewSchema,
   bulkDistillerySchema,
   bulkProductSchema
 } from "@shared/schema";
@@ -486,6 +487,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete user product error:", error);
       res.status(500).json({ message: "Failed to remove product" });
+    }
+  });
+
+  // App reviews routes
+  app.get("/api/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getAppReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Get reviews error:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      // Check if user already has a review
+      const existingReview = await storage.getUserAppReview(req.session.userId);
+      if (existingReview) {
+        return res.status(400).json({ message: "You have already submitted a review" });
+      }
+
+      const validatedData = insertAppReviewSchema.parse({
+        ...req.body,
+        userId: req.session.userId,
+      });
+
+      const review = await storage.createAppReview(validatedData);
+      res.status(201).json(review);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create review error:", error);
+      res.status(500).json({ message: "Failed to create review" });
     }
   });
 

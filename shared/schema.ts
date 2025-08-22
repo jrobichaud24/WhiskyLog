@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, integer, decimal, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -141,3 +141,30 @@ export type UserWhisky = typeof userWhiskies.$inferSelect;
 
 export type InsertUserProduct = z.infer<typeof insertUserProductSchema>;
 export type UserProduct = typeof userProducts.$inferSelect;
+
+// App Reviews table
+export const appReviews = pgTable("app_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  rating: integer("rating").notNull(), // 1-5 stars
+  title: varchar("title", { length: 255 }).notNull(),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const appReviewsRelations = relations(appReviews, ({ one }) => ({
+  user: one(users, {
+    fields: [appReviews.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertAppReviewSchema = createInsertSchema(appReviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAppReview = z.infer<typeof insertAppReviewSchema>;
+export type AppReview = typeof appReviews.$inferSelect;
