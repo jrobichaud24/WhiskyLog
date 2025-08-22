@@ -36,9 +36,7 @@ export default function Reviews() {
     retry: false
   });
 
-  // Debug logging (remove later)
-  console.log('User data:', user);
-  console.log('User loading:', userLoading);
+
 
   const { data: reviews = [], isLoading, refetch } = useQuery<AppReviewWithUser[]>({
     queryKey: ["/api/reviews"],
@@ -48,7 +46,7 @@ export default function Reviews() {
     mutationFn: async (reviewData: { rating: number; title: string; comment: string }) => {
       return await apiRequest("/api/reviews", {
         method: "POST",
-        body: JSON.stringify(reviewData),
+        body: reviewData,
       });
     },
     onSuccess: () => {
@@ -155,9 +153,7 @@ export default function Reviews() {
               <Dialog 
                 open={isDialogOpen} 
                 onOpenChange={(open) => {
-                  console.log('Dialog onOpenChange called with:', open, 'User:', user, 'UserLoading:', userLoading);
                   if (open && !userLoading && !user) {
-                    console.log('Redirecting to login because user is not authenticated');
                     toast({
                       title: "Login Required",
                       description: "Please log in to write a review",
