@@ -36,7 +36,7 @@ export default function Reviews() {
     retry: false
   });
 
-  // Debug logging
+  // Debug logging (remove later)
   console.log('User data:', user);
   console.log('User loading:', userLoading);
 
