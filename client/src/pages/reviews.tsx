@@ -148,24 +148,27 @@ export default function Reviews() {
                 Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
               </p>
               
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog 
+                open={isDialogOpen} 
+                onOpenChange={(open) => {
+                  if (open && !user) {
+                    toast({
+                      title: "Login Required",
+                      description: "Please log in to write a review",
+                      variant: "destructive",
+                    });
+                    setTimeout(() => {
+                      window.location.href = '/login?redirect=' + encodeURIComponent('/reviews');
+                    }, 1000);
+                    return;
+                  }
+                  setIsDialogOpen(open);
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button 
                     className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                     data-testid="button-write-review"
-                    onClick={() => {
-                      if (!user) {
-                        toast({
-                          title: "Login Required",
-                          description: "Please log in to write a review",
-                          variant: "destructive",
-                        });
-                        setTimeout(() => {
-                          window.location.href = '/login?redirect=' + encodeURIComponent('/reviews');
-                        }, 1000);
-                        return;
-                      }
-                    }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Write a Review
