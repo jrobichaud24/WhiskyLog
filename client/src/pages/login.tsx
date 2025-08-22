@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -13,6 +14,7 @@ import Navigation from "@/components/navigation";
 interface LoginForm {
   username: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export default function Login() {
@@ -124,6 +126,17 @@ export default function Login() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="rememberMe" 
+                  {...register("rememberMe")}
+                  data-testid="checkbox-remember-me"
+                />
+                <Label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
+                  Keep me signed in for 30 days
+                </Label>
               </div>
 
               <Button

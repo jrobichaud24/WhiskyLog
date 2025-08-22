@@ -24,7 +24,7 @@ declare module 'express-session' {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure sessions
+  // Configure sessions with persistent login
   app.use(session({
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     resave: false,
@@ -32,8 +32,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       secure: false, // Set to true in production with HTTPS
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    }
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
+    },
+    rolling: true, // Reset expiration on each request
   }));
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
@@ -72,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, password, rememberMe } = req.body;
       
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
@@ -94,8 +95,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Set session
+      // Set session with appropriate expiration
       req.session.userId = user.id;
+      
+      // Configure session duration based on "Remember Me"
+      if (rememberMe) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      } else {
+        req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      }
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;

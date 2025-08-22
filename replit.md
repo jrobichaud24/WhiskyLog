@@ -10,6 +10,26 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Persistent Login Sessions Implementation (August 22, 2025)
+- Added comprehensive persistent session management for improved user experience
+- Enhanced login form with "Keep me signed in for 30 days" checkbox option
+- Implemented backend session duration logic based on user preference:
+  * Standard login: 24-hour session expiration
+  * Remember Me checked: 30-day session expiration with rolling refresh
+- Sessions automatically extend on user activity to maintain login state
+- Server-side session configuration with secure cookie settings
+- Updated login flow to support redirect parameters for seamless navigation
+- Fixed authentication endpoint issues ensuring reliable user state management
+
+## App Reviews System Implementation (August 22, 2025)
+- Created complete app reviews system with database schema and API endpoints
+- Built beautiful modal-based review submission with star ratings and comments
+- Added authentication flow for review submission with smart login redirects
+- Enhanced reviews page with average rating display and user review listing
+- Fixed JSON parsing and authentication timing issues for seamless user experience
+- Users can view all reviews and submit one review per account
+- Integrated with existing authentication system for secure review management
+
 ## Scottish Region Images Implementation (August 22, 2025)
 - Enhanced "Journey Through Scotland's Finest" section with authentic landscape images for all 6 whisky regions
 - Added Highland dramatic mountains and valleys image
