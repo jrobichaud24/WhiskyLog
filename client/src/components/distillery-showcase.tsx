@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { Distillery } from "@shared/schema";
+import highlandImage from "@assets/highlands_1755825461469.webp";
 
 const regionDisplayOrder = [
   "Highland",
@@ -79,7 +80,15 @@ export default function DistilleryShowcase() {
             >
               <CardContent className="p-0">
                 <div className="relative h-64 rounded-2xl overflow-hidden">
-                  <div className="w-full h-full bg-gradient-to-t from-gray-700 to-gray-500 group-hover:scale-110 transition-transform duration-500"></div>
+                  {region.region === "Highland" ? (
+                    <img 
+                      src={highlandImage} 
+                      alt="Highland Region landscape" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-t from-gray-700 to-gray-500 group-hover:scale-110 transition-transform duration-500"></div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                   <div className="absolute bottom-4 left-4">
                     <h3 className="font-playfair text-lg font-semibold text-white" data-testid={`text-region-name-${index}`}>
