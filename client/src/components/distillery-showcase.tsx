@@ -7,6 +7,7 @@ import speysideImage from "@assets/speyside_1755825514874.webp";
 import islayImage from "@assets/islay_1755825546575.webp";
 import lowlandImage from "@assets/lowlands_1755825572942.webp";
 import islandImage from "@assets/islands_1755825588916.webp";
+import campbeltownImage from "@assets/campbeltown_1755825615246.webp";
 
 const regionDisplayOrder = [
   "Highland",
@@ -112,6 +113,12 @@ export default function DistilleryShowcase() {
                     <img 
                       src={islandImage} 
                       alt="Island mountains and coastal waters" 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : region.region === "Campbeltown" ? (
+                    <img 
+                      src={campbeltownImage} 
+                      alt="Campbeltown lighthouse and coastal cliffs" 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (

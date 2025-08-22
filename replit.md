@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Scottish Region Images Implementation (August 22, 2025)
+- Enhanced "Journey Through Scotland's Finest" section with authentic landscape images for all 6 whisky regions
+- Added Highland dramatic mountains and valleys image
+- Added Speyside historic castle with bridge image  
+- Added Islay stunning coastal cliffs and ocean image
+- Added Lowland peaceful rolling hills with winding river image
+- Added Island majestic mountains with coastal waters image
+- Added Campbeltown lighthouse and coastal cliffs image
+- Updated region names from "Lowlands" to "Lowland" and "Islands" to "Island" to match database
+- All region tiles now feature beautiful authentic Scottish landscapes that represent each region's character
+- Images scale smoothly on hover with proper visual transitions
+
 ## Collection Page Implementation (August 21, 2025)
 - Created dedicated collection page (/collection) displaying user's owned whiskies with detailed information
 - Added comprehensive whisky display cards showing product details, ratings, tasting notes, and collection dates
