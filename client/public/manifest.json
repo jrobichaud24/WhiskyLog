@@ -1,49 +1,47 @@
 {
-  "name": "The Dram Journal - Track Your Whisky Journey",
-  "short_name": "The Dram Journal",
+  "name": "The Dram Journal",
+  "short_name": "Dram Journal",
   "description": "Track, rate, and discover exceptional single malt scotch whiskies",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FEFDF6",
-  "theme_color": "#D4AF37",
+  "background_color": "#f8f6f0",
+  "theme_color": "#d97706",
   "orientation": "portrait-primary",
   "scope": "/",
-  "prefer_related_applications": false,
-  "categories": ["food", "lifestyle", "social"],
+  "categories": ["food", "lifestyle", "entertainment"],
+  "lang": "en",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png", 
+      "src": "/icon-512.png", 
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
       "src": "/screenshot-mobile.png",
       "sizes": "390x844",
       "type": "image/png",
-      "form_factor": "narrow",
-      "label": "The Dram Journal mobile view"
-    },
-    {
-      "src": "/screenshot-desktop.png",
-      "sizes": "1920x1080", 
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "The Dram Journal desktop view"
+      "form_factor": "narrow"
     }
+  ],
+  "features": [
+    "Offline whisky collection tracking",
+    "Product discovery and ratings",
+    "Tasting notes and reviews",
+    "Scottish distillery exploration"
   ]
 }

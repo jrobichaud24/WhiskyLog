@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## Progressive Web App (PWA) Implementation (August 22, 2025)
+- Added comprehensive Progressive Web App capabilities for offline use and app installation
+- Created web app manifest with proper metadata, icons, and screenshots configuration
+- Implemented service worker for offline caching of static files and API responses
+- Added PWA install prompt component with elegant UI and user-friendly messaging
+- Enhanced HTML with PWA meta tags for mobile and Apple device compatibility
+- Configured automatic service worker registration and update handling
+- Added background sync capabilities for data synchronization when connection restored
+- Implemented push notification support for whisky recommendations and updates
+- Users can now install the app on their devices for native app-like experience
+- App works offline with cached content and automatically syncs when back online
+
 ## Persistent Login Sessions Implementation (August 22, 2025)
 - Added comprehensive persistent session management for improved user experience
 - Enhanced login form with "Keep me signed in for 30 days" checkbox option

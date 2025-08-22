@@ -14,6 +14,7 @@ import Reviews from "@/pages/reviews";
 import AdminPage from "@/pages/admin";
 import Discover from "@/pages/discover";
 import Browse from "@/pages/browse";
+import PWAInstall from "@/components/pwa-install";
 
 function Router() {
   return (
@@ -38,6 +39,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <PWAInstall />
         <Router />
       </TooltipProvider>
     </QueryClientProvider>

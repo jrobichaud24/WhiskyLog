@@ -1,101 +1,219 @@
-const CACHE_NAME = 'dramjournal-v1';
-const urlsToCache = [
+const CACHE_NAME = 'dram-journal-v1';
+const STATIC_CACHE = 'dram-journal-static-v1';
+const API_CACHE = 'dram-journal-api-v1';
+
+// Files to cache for offline use
+const STATIC_FILES = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/index.html',
+  '/src/main.tsx',
+  '/src/index.css',
+  '/src/App.tsx',
+  '/manifest.json',
+  '/logo.png'
 ];
 
-// Install service worker and cache resources
+// API endpoints to cache
+const API_ENDPOINTS = [
+  '/api/auth/user',
+  '/api/products',
+  '/api/distilleries',
+  '/api/user-products',
+  '/api/reviews'
+];
+
+// Install event - cache static files
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('Caching static files');
+        return cache.addAll(STATIC_FILES);
+      })
+      .then(() => {
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('Failed to cache static files:', error);
       })
   );
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        
-        // Clone the request for fetching and caching
-        const fetchRequest = event.request.clone();
-        
-        return fetch(fetchRequest).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          // Clone the response for caching
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-            
-          return response;
-        });
-      })
-  );
-});
-
-// Activate service worker and clean up old caches
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  
+  console.log('Service Worker activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== STATIC_CACHE && cacheName !== API_CACHE) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        return self.clients.claim();
+      })
   );
 });
 
-// Handle PWA installation prompt
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+// Fetch event - serve from cache when offline
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Handle API requests
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Cache successful API responses (except auth endpoints)
+          if (response.ok && !url.pathname.includes('/auth/')) {
+            const responseClone = response.clone();
+            caches.open(API_CACHE)
+              .then((cache) => {
+                cache.put(request, responseClone);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try to serve from cache
+          return caches.match(request);
+        })
+    );
+    return;
   }
+
+  // Handle static file requests
+  event.respondWith(
+    caches.match(request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return fetch(request)
+          .then((response) => {
+            // Cache successful responses for static assets
+            if (response.ok && (
+              request.destination === 'document' ||
+              request.destination === 'script' ||
+              request.destination === 'style' ||
+              request.destination === 'image'
+            )) {
+              const responseClone = response.clone();
+              caches.open(STATIC_CACHE)
+                .then((cache) => {
+                  cache.put(request, responseClone);
+                });
+            }
+            return response;
+          });
+      })
+      .catch(() => {
+        // Fallback for offline navigation
+        if (request.destination === 'document') {
+          return caches.match('/');
+        }
+      })
+  );
 });
 
-// Background sync for offline functionality
+// Background sync for when connection is restored
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
     console.log('Background sync triggered');
-    // Handle offline data sync here
+    event.waitUntil(
+      // Sync any pending data when online
+      syncPendingData()
+    );
   }
 });
 
-// Push notifications (for future features)
+// Sync pending data function
+async function syncPendingData() {
+  try {
+    // Check if there's any pending data to sync
+    const pendingData = await getStoredPendingData();
+    
+    if (pendingData.length > 0) {
+      console.log('Syncing pending data:', pendingData.length, 'items');
+      
+      for (const item of pendingData) {
+        try {
+          await fetch(item.url, item.options);
+          // Remove from pending after successful sync
+          await removePendingData(item.id);
+        } catch (error) {
+          console.error('Failed to sync item:', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Background sync failed:', error);
+  }
+}
+
+// Helper functions for pending data storage
+async function getStoredPendingData() {
+  // In a real implementation, you'd use IndexedDB
+  return [];
+}
+
+async function removePendingData(id) {
+  // Remove synced data from storage
+  console.log('Removing synced data:', id);
+}
+
+// Push notification handling
 self.addEventListener('push', (event) => {
   const options = {
-    body: event.data ? event.data.text() : 'New whisky recommendation!',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
+    body: event.data ? event.data.text() : 'New whisky recommendations available!',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
       primaryKey: 1
-    }
+    },
+    actions: [
+      {
+        action: 'explore',
+        title: 'Explore',
+        icon: '/icons/checkmark.png'
+      },
+      {
+        action: 'close',
+        title: 'Close',
+        icon: '/icons/xmark.png'
+      }
+    ]
   };
-  
+
   event.waitUntil(
     self.registration.showNotification('The Dram Journal', options)
   );
+});
+
+// Notification click handling
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'explore') {
+    event.waitUntil(
+      clients.openWindow('/discover')
+    );
+  } else if (event.action === 'close') {
+    // Just close the notification
+  } else {
+    // Default action - open the app
+    event.waitUntil(
+      clients.openWindow('/')
+    );
+  }
 });
