@@ -15,6 +15,7 @@ import {
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
+import Anthropic from '@anthropic-ai/sdk';
 
 // Extend session interface
 declare module 'express-session' {
@@ -22,6 +23,11 @@ declare module 'express-session' {
     userId?: string;
   }
 }
+
+// Initialize Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure sessions with persistent login
@@ -657,6 +663,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete user error:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Image analysis endpoint for bottle scanning
+  app.post("/api/analyze-bottle", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { image } = req.body;
+      
+      if (!image) {
+        return res.status(400).json({ message: "Image data is required" });
+      }
+
+      // Analyze the image with Anthropic
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this whisky bottle image and extract all visible text from the label. Focus on identifying the whisky name, distillery, age statement, ABV, and any other details. Format the response as JSON with fields: name, distillery, age, abv, description. If you can't clearly identify certain information, leave those fields empty. Only respond with the JSON, no other text."
+              },
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: "image/jpeg",
+                  data: image
+                }
+              }
+            ]
+          }
+        ]
+      });
+
+      let whiskyData;
+      try {
+        const content = response.content[0];
+        if (content.type === 'text') {
+          const analysisText = content.text;
+          // Try to parse JSON response, fallback to manual parsing if needed
+          if (analysisText.includes('{')) {
+            const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              whiskyData = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error("No JSON found in response");
+            }
+          } else {
+            throw new Error("No JSON in response");
+          }
+        } else {
+          throw new Error("Invalid response type");
+        }
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract basic info
+        const content = response.content[0];
+        const text = content.type === 'text' ? content.text : "Could not parse response";
+        whiskyData = {
+          name: "",
+          distillery: "",
+          age: "",
+          abv: "",
+          description: text
+        };
+      }
+
+      // Search for existing product in database
+      const products = await storage.getProducts();
+      const distilleries = await storage.getDistilleries();
+      
+      const matchingProduct = products.find(product => {
+        if (!whiskyData.name) return false;
+        
+        // Simple matching logic - can be improved
+        const nameMatch = product.name.toLowerCase().includes(whiskyData.name.toLowerCase()) ||
+                         whiskyData.name.toLowerCase().includes(product.name.toLowerCase());
+        
+        if (whiskyData.distillery) {
+          const distillery = distilleries.find(d => d.id === product.distillery);
+          const distilleryMatch = distillery?.name.toLowerCase().includes(whiskyData.distillery.toLowerCase()) ||
+                                whiskyData.distillery.toLowerCase().includes(distillery?.name.toLowerCase() || "");
+          return nameMatch && distilleryMatch;
+        }
+        
+        return nameMatch;
+      });
+
+      if (matchingProduct) {
+        // Check if user already has this product
+        const existingUserProduct = await storage.getUserProduct(req.session.userId, matchingProduct.id);
+        
+        if (existingUserProduct) {
+          return res.json({
+            success: false,
+            message: `${matchingProduct.name} is already in your collection!`,
+            whiskyData,
+            product: matchingProduct
+          });
+        }
+
+        // Add to user's collection
+        const userProduct = await storage.createUserProduct({
+          userId: req.session.userId,
+          productId: matchingProduct.id,
+          owned: true,
+          wishlist: false,
+          rating: 0,
+          tastingNotes: `Added via bottle scan - ${whiskyData.description || "Identified from photo"}`
+        });
+
+        return res.json({
+          success: true,
+          message: `Successfully identified and added ${matchingProduct.name} to your collection!`,
+          whiskyData,
+          product: matchingProduct,
+          userProduct
+        });
+      } else {
+        // Product not found in database
+        return res.json({
+          success: false,
+          message: `Identified whisky: ${whiskyData.name || "Unknown"} ${whiskyData.distillery ? `from ${whiskyData.distillery}` : ""}, but it's not in our database yet. Consider adding it manually!`,
+          whiskyData,
+          suggestions: "You can browse our collection or contact us to add this whisky to our database."
+        });
+      }
+
+    } catch (error) {
+      console.error("Image analysis error:", error);
+      res.status(500).json({ 
+        message: "Failed to analyze image. Please try again with a clearer photo of the bottle label.",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

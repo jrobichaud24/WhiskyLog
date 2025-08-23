@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import CameraCapture from "@/components/camera-capture";
 import { 
   ArrowLeft,
   LogOut,
@@ -194,18 +195,36 @@ export default function Collection() {
             </div>
             <h3 className="text-xl font-semibold text-slate-700 mb-2">No Whiskies in Collection</h3>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
-              Start building your whisky collection by browsing and rating whiskies.
+              Start building your whisky collection by browsing and rating whiskies, or scan a bottle with your camera.
             </p>
-            <Button 
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
-              onClick={() => setLocation("/browse")}
-              data-testid="button-start-collection"
-            >
-              Browse Whiskies
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
+                onClick={() => setLocation("/browse")}
+                data-testid="button-start-collection"
+              >
+                Browse Whiskies
+              </Button>
+              <CameraCapture onWhiskyAdded={() => queryClient.invalidateQueries({ queryKey: ["/api/user-products"] })} />
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Action buttons for existing collection */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-slate-800 font-playfair">Your Collection</h2>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline"
+                  onClick={() => setLocation("/browse")}
+                  data-testid="button-browse-more"
+                >
+                  Browse More
+                </Button>
+                <CameraCapture onWhiskyAdded={() => queryClient.invalidateQueries({ queryKey: ["/api/user-products"] })} />
+              </div>
+            </div>
+            
             {collectionItems.map(({ userProduct, product, distillery }) => (
               <Card key={userProduct.id} className="bg-white/90 backdrop-blur-sm shadow-xl border-0 hover:shadow-2xl transition-shadow">
                 <CardContent className="p-6">
