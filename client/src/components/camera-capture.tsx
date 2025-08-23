@@ -51,7 +51,33 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     }
   };
 
-  const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -65,13 +91,17 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       return;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setCapturedImage(result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress image to reduce upload size
+      const compressedImage = await compressImage(file, 1200, 0.8);
+      setCapturedImage(compressedImage);
+    } catch (error) {
+      toast({
+        title: "Image Processing Error",
+        description: "Could not process the image. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAnalyzeImage = () => {
