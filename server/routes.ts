@@ -788,12 +788,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userProduct
         });
       } else {
-        // Product not found in database
+        // Product not found in database - return structured data for potential creation
         return res.json({
           success: false,
-          message: `Identified whisky: ${whiskyData.name || "Unknown"} ${whiskyData.distillery ? `from ${whiskyData.distillery}` : ""}, but it's not in our database yet. Consider adding it manually!`,
+          productNotFound: true,
+          message: `Identified whisky: ${whiskyData.name || "Unknown"} ${whiskyData.distillery ? `from ${whiskyData.distillery}` : ""}, but it's not in our database yet.`,
           whiskyData,
-          suggestions: "You can browse our collection or contact us to add this whisky to our database."
+          canAdd: true
         });
       }
 
@@ -801,6 +802,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Image analysis error:", error);
       res.status(500).json({ 
         message: "Failed to analyze image. Please try again with a clearer photo of the bottle label.",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Create product from camera analysis endpoint
+  app.post("/api/analyze-bottle/create-product", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { whiskyData } = req.body;
+      
+      if (!whiskyData || !whiskyData.name) {
+        return res.status(400).json({ message: "Whisky data with name is required" });
+      }
+
+      // First, try to find or create the distillery
+      let distillery;
+      if (whiskyData.distillery) {
+        // Check if distillery exists
+        const distilleries = await storage.getDistilleries();
+        distillery = distilleries.find(d => 
+          d.name.toLowerCase().includes(whiskyData.distillery.toLowerCase()) ||
+          whiskyData.distillery.toLowerCase().includes(d.name.toLowerCase())
+        );
+
+        // If not found, create new distillery
+        if (!distillery) {
+          const newDistilleryData = {
+            name: whiskyData.distillery,
+            region: "Unknown", // We could try to extract this from the whisky data
+            country: "Scotland", // Default assumption for whisky
+            status: "active",
+            description: `Added from bottle scan: ${whiskyData.distillery}`
+          };
+          
+          distillery = await storage.createDistillery(newDistilleryData);
+        }
+      }
+
+      // Create the product
+      const productData = {
+        name: whiskyData.name,
+        distillery: distillery?.id,
+        price: whiskyData.price || null,
+        abvPercent: whiskyData.abv ? whiskyData.abv.replace('%', '') : null,
+        description: whiskyData.description || `Added from bottle scan: ${whiskyData.name}`,
+        volumeCl: whiskyData.volume || null,
+        ageStatement: whiskyData.age || null
+      };
+
+      const product = await storage.createProduct(productData);
+
+      // Add to user's collection
+      const userProduct = await storage.createUserProduct({
+        userId: req.session.userId,
+        productId: product.id,
+        owned: true,
+        wishlist: false,
+        rating: 0,
+        tastingNotes: `Added via bottle scan - ${whiskyData.description || "Identified from photo"}`
+      });
+
+      return res.json({
+        success: true,
+        message: `Successfully added ${product.name} to the database and your collection!`,
+        product,
+        userProduct,
+        distillery: distillery || null
+      });
+
+    } catch (error) {
+      console.error("Create product from analysis error:", error);
+      res.status(500).json({ 
+        message: "Failed to create product. Please try again.",
         error: error instanceof Error ? error.message : "Unknown error"
       });
     }

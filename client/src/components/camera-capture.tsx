@@ -14,11 +14,13 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [whiskyDataToAdd, setWhiskyDataToAdd] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Mutation to analyze image and add whisky
+  // Mutation to analyze image
   const analyzeImageMutation = useMutation({
     mutationFn: async (imageData: string) => {
       const response = await apiRequest("/api/analyze-bottle", {
@@ -28,16 +30,52 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       return response;
     },
     onSuccess: (result) => {
-      setAnalysisResult(result.message || "Successfully identified and added whisky to your collection!");
+      setAnalysisResult(result);
       if (result.success && onWhiskyAdded) {
         onWhiskyAdded();
         queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+      } else if (result.productNotFound && result.canAdd) {
+        // Show confirmation dialog for adding new product
+        setWhiskyDataToAdd(result.whiskyData);
+        setShowAddDialog(true);
       }
     },
     onError: (error: Error) => {
       toast({
         title: "Analysis Failed",
         description: error.message || "Could not identify the whisky from the image",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation to create new product
+  const createProductMutation = useMutation({
+    mutationFn: async (whiskyData: any) => {
+      const response = await apiRequest("/api/analyze-bottle/create-product", {
+        method: "POST",
+        body: { whiskyData }
+      });
+      return response;
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Success!",
+        description: result.message,
+      });
+      setAnalysisResult(result);
+      setShowAddDialog(false);
+      if (onWhiskyAdded) {
+        onWhiskyAdded();
+        queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Product",
+        description: error.message || "Could not add the whisky to the database",
         variant: "destructive",
       });
     }
@@ -119,10 +157,26 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     setIsOpen(false);
     setCapturedImage(null);
     setAnalysisResult(null);
+    setShowAddDialog(false);
+    setWhiskyDataToAdd(null);
     setIsProcessing(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleAddProduct = () => {
+    if (whiskyDataToAdd) {
+      createProductMutation.mutate(whiskyDataToAdd);
+    }
+  };
+
+  const handleDeclineAdd = () => {
+    setShowAddDialog(false);
+    setAnalysisResult({
+      success: false,
+      message: "Whisky identification complete. You chose not to add it to the database."
+    });
   };
 
   const isLoading = analyzeImageMutation.isPending || isProcessing;
@@ -192,10 +246,20 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                 </div>
 
                 {analysisResult && (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className={`p-4 border rounded-lg ${
+                    analysisResult.success 
+                      ? "bg-green-50 border-green-200" 
+                      : "bg-blue-50 border-blue-200"
+                  }`}>
                     <div className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                      <p className="text-green-800 text-sm">{analysisResult}</p>
+                      <CheckCircle className={`h-5 w-5 mt-0.5 ${
+                        analysisResult.success ? "text-green-600" : "text-blue-600"
+                      }`} />
+                      <p className={`text-sm ${
+                        analysisResult.success ? "text-green-800" : "text-blue-800"
+                      }`}>
+                        {analysisResult.message}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -234,11 +298,72 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                 )}
               </Button>
             )}
-            {analysisResult && (
+            {analysisResult && !showAddDialog && (
               <Button onClick={handleClose} data-testid="button-done">
                 Done
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation dialog for adding new product */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Whisky to Database?</DialogTitle>
+            <DialogDescription>
+              We identified a whisky that's not in our database yet. Would you like to add it?
+            </DialogDescription>
+          </DialogHeader>
+
+          {whiskyDataToAdd && (
+            <div className="space-y-3">
+              <div className="p-4 bg-slate-50 rounded-lg space-y-2">
+                <div><strong>Name:</strong> {whiskyDataToAdd.name || "Unknown"}</div>
+                {whiskyDataToAdd.distillery && (
+                  <div><strong>Distillery:</strong> {whiskyDataToAdd.distillery}</div>
+                )}
+                {whiskyDataToAdd.age && (
+                  <div><strong>Age:</strong> {whiskyDataToAdd.age}</div>
+                )}
+                {whiskyDataToAdd.abv && (
+                  <div><strong>ABV:</strong> {whiskyDataToAdd.abv}</div>
+                )}
+                {whiskyDataToAdd.description && (
+                  <div className="text-sm text-slate-600">
+                    <strong>Notes:</strong> {whiskyDataToAdd.description}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-slate-500">
+                This will add the whisky to our database and to your collection.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleDeclineAdd}
+              data-testid="button-decline-add"
+            >
+              No, Skip
+            </Button>
+            <Button 
+              onClick={handleAddProduct}
+              disabled={createProductMutation.isPending}
+              data-testid="button-confirm-add"
+            >
+              {createProductMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Yes, Add It"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
