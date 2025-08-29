@@ -23,13 +23,25 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
   // Mutation to analyze image
   const analyzeImageMutation = useMutation({
     mutationFn: async (imageData: string) => {
-      const response = await apiRequest("/api/analyze-bottle", {
-        method: "POST",
-        body: { image: imageData }
-      });
-      return response;
+      // Add timeout to the API request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const response = await apiRequest("/api/analyze-bottle", {
+          method: "POST",
+          body: { image: imageData },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
     },
     onSuccess: (result) => {
+      setIsProcessing(false);
       setAnalysisResult(result);
       if (result.success && onWhiskyAdded) {
         onWhiskyAdded();
@@ -41,10 +53,26 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       }
     },
     onError: (error: Error) => {
+      setIsProcessing(false);
+      console.error("Analysis error:", error);
+      
+      let errorMessage = "Could not identify the whisky from the image";
+      if (error.name === 'AbortError') {
+        errorMessage = "Analysis timed out. Please try again with a clearer, well-lit photo.";
+      } else if (error.message.includes('413')) {
+        errorMessage = "Image too large. Please try with a smaller photo.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Analysis Failed",
-        description: error.message || "Could not identify the whisky from the image",
+        description: errorMessage,
         variant: "destructive",
+      });
+      setAnalysisResult({
+        success: false,
+        message: errorMessage
       });
     }
   });
@@ -148,9 +176,24 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     setIsProcessing(true);
     setAnalysisResult(null);
     
-    // Extract base64 data without the data URL prefix
-    const base64Data = capturedImage.split(',')[1];
-    analyzeImageMutation.mutate(base64Data);
+    try {
+      // Extract base64 data without the data URL prefix
+      const base64Data = capturedImage.split(',')[1];
+      if (!base64Data) {
+        throw new Error("Invalid image data");
+      }
+      
+      console.log("Starting image analysis...");
+      analyzeImageMutation.mutate(base64Data);
+    } catch (error) {
+      console.error("Error preparing image for analysis:", error);
+      setIsProcessing(false);
+      toast({
+        title: "Image Error",
+        description: "Could not process the image. Please try taking a new photo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleClose = () => {
