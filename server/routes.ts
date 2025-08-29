@@ -394,6 +394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log("Bulk product import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
+      console.log("Session userId:", req.session.userId);
+      console.log("Full session:", JSON.stringify(req.session, null, 2));
       
       if (!Array.isArray(req.body)) {
         return res.status(400).json({ message: "Expected an array of products" });
@@ -412,10 +414,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdByUserId: req.session.userId
       }));
       
+      console.log("Product with creator (first):", JSON.stringify(productsWithCreator[0], null, 2));
+      
       const validatedData = bulkProductSchema.parse(productsWithCreator);
-      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
+      console.log("Validated data (first item):", JSON.stringify(validatedData[0], null, 2));
       
       const products = await storage.bulkCreateProducts(validatedData);
+      console.log("Created products (first):", JSON.stringify(products[0], null, 2));
+      
       res.status(201).json({
         message: `Successfully imported ${products.length} products`,
         products
