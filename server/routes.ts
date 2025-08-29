@@ -366,8 +366,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/products", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const validatedData = insertProductSchema.parse(req.body);
+      const validatedData = insertProductSchema.parse({
+        ...req.body,
+        createdByUserId: req.session.userId
+      });
       const product = await storage.createProduct(validatedData);
       res.status(201).json(product);
     } catch (error) {
@@ -381,6 +388,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Bulk import products from spreadsheet
   app.post("/api/products/bulk", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
       console.log("Bulk product import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
       
@@ -395,7 +406,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log first item to see what fields we're receiving
       console.log("First product item:", JSON.stringify(req.body[0], null, 2));
       
-      const validatedData = bulkProductSchema.parse(req.body);
+      // Add createdByUserId to each product
+      const productsWithCreator = req.body.map(product => ({
+        ...product,
+        createdByUserId: req.session.userId
+      }));
+      
+      const validatedData = bulkProductSchema.parse(productsWithCreator);
       console.log("Validated data:", JSON.stringify(validatedData, null, 2));
       
       const products = await storage.bulkCreateProducts(validatedData);
@@ -852,7 +869,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         abvPercent: whiskyData.abv ? whiskyData.abv.replace('%', '') : null,
         description: whiskyData.description || `Added from bottle scan: ${whiskyData.name}`,
         volumeCl: whiskyData.volume || null,
-        ageStatement: whiskyData.age || null
+        ageStatement: whiskyData.age || null,
+        createdByUserId: req.session.userId
       };
 
       const product = await storage.createProduct(productData);
