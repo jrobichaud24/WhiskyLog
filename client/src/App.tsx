@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import Signup from "@/pages/signup";
 import Login from "@/pages/login";
 import ResetPassword from "@/pages/reset-password";
+import VerifyEmail from "@/pages/verify-email";
 import Dashboard from "@/pages/dashboard";
 import Collection from "@/pages/collection";
 import Reviews from "@/pages/reviews";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/collection" component={Collection} />
       <Route path="/reviews" component={Reviews} />
