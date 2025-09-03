@@ -11,6 +11,8 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  verificationToken: text("verification_token"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
