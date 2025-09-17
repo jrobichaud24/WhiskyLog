@@ -23,8 +23,6 @@ export interface IStorage {
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
   deleteUser(userId: string): Promise<boolean>;
-  getUserByVerificationToken(token: string): Promise<User | undefined>;
-  verifyUser(userId: string): Promise<boolean>;
   
   // Distillery operations
   getDistilleries(): Promise<Distillery[]>;
@@ -186,27 +184,6 @@ export class DatabaseStorage implements IStorage {
   async deleteUser(userId: string): Promise<boolean> {
     const result = await db
       .delete(users)
-      .where(eq(users.id, userId))
-      .returning();
-    
-    return result.length > 0;
-  }
-
-  async getUserByVerificationToken(token: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.verificationToken, token));
-    return user || undefined;
-  }
-
-  async verifyUser(userId: string): Promise<boolean> {
-    const result = await db
-      .update(users)
-      .set({ 
-        verified: true,
-        verificationToken: null
-      })
       .where(eq(users.id, userId))
       .returning();
     

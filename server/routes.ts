@@ -16,8 +16,6 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import Anthropic from '@anthropic-ai/sdk';
-import { emailService } from './emailService';
-import { randomBytes } from 'crypto';
 
 // Extend session interface
 declare module 'express-session' {
@@ -60,35 +58,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
       
-      // Generate verification token
-      const verificationToken = randomBytes(32).toString('hex');
+      // Create user
+      const user = await storage.createUser(validatedData);
       
-      // Create user with verification token (not verified initially)
-      const userWithToken = {
-        ...validatedData,
-        verified: false,
-        verificationToken
-      };
-      const user = await storage.createUser(userWithToken);
+      // Set session
+      req.session.userId = user.id;
       
-      // Send verification email
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const emailSent = await emailService.sendVerificationEmail(
-        user.email, 
-        verificationToken, 
-        baseUrl
-      );
-      
-      if (!emailSent) {
-        console.error('Failed to send verification email');
-        // Still create the user but warn about email failure
-      }
-      
-      // Do not set session - user must verify email first
-      res.status(201).json({ 
-        message: "Account created successfully. Please check your email to verify your account before logging in.",
-        email: user.email
-      });
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
       
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -123,13 +101,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // Check if user is verified
-      if (!user.verified) {
-        return res.status(401).json({ 
-          message: "Please verify your email address before logging in. Check your inbox for a verification link."
-        });
-      }
-      
       // Set session with appropriate expiration
       req.session.userId = user.id;
       
@@ -157,40 +128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logged out successfully" });
     });
-  });
-
-  // Email verification endpoint
-  app.get("/api/auth/verify-email", async (req, res) => {
-    try {
-      const { token } = req.query;
-      
-      if (!token || typeof token !== 'string') {
-        return res.status(400).json({ message: "Invalid verification token" });
-      }
-      
-      // Find user by verification token
-      const user = await storage.getUserByVerificationToken(token);
-      if (!user) {
-        return res.status(400).json({ message: "Invalid or expired verification token" });
-      }
-      
-      // Check if user is already verified
-      if (user.verified) {
-        return res.status(200).json({ message: "Email already verified. You can now log in." });
-      }
-      
-      // Verify the user
-      const verified = await storage.verifyUser(user.id);
-      if (!verified) {
-        return res.status(500).json({ message: "Failed to verify email" });
-      }
-      
-      res.json({ message: "Email verified successfully! You can now log in." });
-      
-    } catch (error) {
-      console.error("Email verification error:", error);
-      res.status(500).json({ message: "Verification failed" });
-    }
   });
 
   app.get("/api/auth/me", async (req, res) => {
