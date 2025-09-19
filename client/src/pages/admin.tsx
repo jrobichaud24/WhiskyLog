@@ -1332,6 +1332,7 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
     tastingTaste: "",
     tastingFinish: "",
     productUrl: "",
+    productImage: "",
   });
 
   const createMutation = useMutation({
@@ -1522,6 +1523,18 @@ function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[
               onChange={(e) => setFormData({ ...formData, productUrl: e.target.value })}
               placeholder="https://example.com/product"
               data-testid="input-product-url"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="product-image">Product Image URL</Label>
+            <Input
+              id="product-image"
+              type="url"
+              value={formData.productImage}
+              onChange={(e) => setFormData({ ...formData, productImage: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+              data-testid="input-product-image"
             />
           </div>
 

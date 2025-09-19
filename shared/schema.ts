@@ -43,6 +43,7 @@ export const products = pgTable("products", {
   tastingTaste: text("tasting_taste"),
   tastingFinish: text("tasting_finish"),
   productUrl: text("product_url"),
+  productImage: text("product_image"),
   createdByUserId: varchar("created_by_user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
