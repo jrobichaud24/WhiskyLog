@@ -27,7 +27,8 @@ import {
   Plus,
   Star,
   Heart,
-  Check
+  Check,
+  Package
 } from "lucide-react";
 import type { Product, Distillery, User } from "@shared/schema";
 
@@ -575,8 +576,30 @@ export default function Browse() {
                 >
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                      {/* Product Image */}
+                      <div className="lg:col-span-2">
+                        <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                          {product.productImage ? (
+                            <img 
+                              src={product.productImage} 
+                              alt={`${product.name} bottle`}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
+                            <Package className="h-12 w-12 mb-2 opacity-50" />
+                            <span className="text-xs text-amber-500 opacity-75">No Image</span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Main Info */}
-                      <div className="lg:col-span-4 space-y-3">
+                      <div className="lg:col-span-3 space-y-3">
                         <div>
                           <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
                             {product.name}
@@ -596,7 +619,7 @@ export default function Browse() {
                       </div>
 
                       {/* Technical Details */}
-                      <div className="lg:col-span-3 space-y-2">
+                      <div className="lg:col-span-2 space-y-2">
                         {product.abvPercent && (
                           <div className="flex items-center text-sm text-slate-600">
                             <Percent className="h-4 w-4 mr-2 text-amber-600" />
