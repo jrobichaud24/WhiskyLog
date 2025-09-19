@@ -403,10 +403,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot import empty array" });
       }
 
-      // Add createdByUserId to each product
+      // Add createdByUserId to each product and clean price data
       const productsWithCreator = req.body.map(product => ({
         ...product,
-        createdByUserId: req.session.userId
+        createdByUserId: req.session.userId,
+        // Clean price by removing currency symbols and codes
+        price: product.price ? 
+          String(product.price)
+            .replace(/^[A-Z]{3}\s*/, '') // Remove currency codes like GBP, USD
+            .replace(/^[£$€¥₹¢₽₩₨₪₡₦₴₸₼₻₺₾₺₵₶₷₸₹₺₻₼₽₾₿]/g, '') // Remove currency symbols
+            .replace(/[,\s]/g, '') // Remove commas and whitespace
+            .trim() || null
+          : product.price
       }));
       
       const validatedData = bulkProductSchema.parse(productsWithCreator);
