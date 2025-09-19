@@ -419,7 +419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .replace(/^[£$€¥₹¢₽₩₨₪₡₦₴₸₼₻₺₾₺₵₶₷₸₹₺₻₼₽₾₿]/g, '') // Remove currency symbols
             .replace(/[,\s]/g, '') // Remove commas and whitespace
             .trim() || null
-          : product.price
+          : product.price,
+        // Convert product_image to productImage if needed (backend safety net)
+        productImage: product.productImage || product.product_image || null
       }));
       
       console.log("First product after processing:", JSON.stringify(productsWithCreator[0], null, 2));
