@@ -100,8 +100,12 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           // Distillery should be a distillery ID
           row[fieldName] = value || null;
         } else if (fieldName === 'price' && value) {
-          // Clean price by removing currency prefix (GBP, USD, etc.)
-          const cleanPrice = value.replace(/^[A-Z]{3}\s*/, '').trim();
+          // Clean price by removing currency symbols (£, $, €) and codes (GBP, USD, etc.)
+          const cleanPrice = value
+            .replace(/^[A-Z]{3}\s*/, '') // Remove currency codes like GBP, USD
+            .replace(/^[£$€¥₹¢₽₩₨₪₡₦₴₸₼₻₺₾₺₵₶₷₸₹₺₻₼₽₾₿]/g, '') // Remove currency symbols
+            .replace(/[,\s]/g, '') // Remove commas and whitespace
+            .trim();
           row[fieldName] = cleanPrice || null;
         } else if (fieldName === 'abvPercent' && value) {
           row[fieldName] = value; // Keep as string for decimal fields
