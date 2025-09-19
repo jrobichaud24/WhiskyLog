@@ -403,6 +403,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot import empty array" });
       }
 
+      // Debug: Check what's in the first item before processing
+      console.log("First product item (raw):", JSON.stringify(req.body[0], null, 2));
+      console.log("productImage field:", req.body[0]?.productImage);
+      console.log("product_image field:", req.body[0]?.product_image);
+      
       // Add createdByUserId to each product and clean price data
       const productsWithCreator = req.body.map(product => ({
         ...product,
@@ -416,6 +421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .trim() || null
           : product.price
       }));
+      
+      console.log("First product after processing:", JSON.stringify(productsWithCreator[0], null, 2));
       
       const validatedData = bulkProductSchema.parse(productsWithCreator);
       
