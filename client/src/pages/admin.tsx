@@ -70,7 +70,11 @@ function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): a
           'finish': 'tastingFinish',
           'product_url': 'productUrl',
           'productUrl': 'productUrl',
-          'url': 'productUrl'
+          'url': 'productUrl',
+          'product_image': 'productImage',
+          'productImage': 'productImage',
+          'image': 'productImage',
+          'image_url': 'productImage'
         };
         fieldName = fieldMappings[header] || header;
       }
