@@ -144,6 +144,29 @@ export type UserWhisky = typeof userWhiskies.$inferSelect;
 export type InsertUserProduct = z.infer<typeof insertUserProductSchema>;
 export type UserProduct = typeof userProducts.$inferSelect;
 
+// Badges table - different achievement badges users can earn
+export const badges = pgTable("badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // Lucide icon name
+  category: text("category").notNull(), // e.g., "collection", "tasting", "exploration"
+  rarity: text("rarity").notNull().default("common"), // common, rare, epic, legendary
+  requirement: text("requirement").notNull(), // Description of how to earn the badge
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User badges table - tracks which badges each user has earned
+export const userBadges = pgTable("user_badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  badgeId: varchar("badge_id").notNull().references(() => badges.id),
+  earnedAt: timestamp("earned_at").defaultNow(),
+  progress: integer("progress").default(0), // For badges with progress tracking
+  maxProgress: integer("max_progress").default(1), // Total needed to complete badge
+});
+
 // App Reviews table
 export const appReviews = pgTable("app_reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -155,6 +178,21 @@ export const appReviews = pgTable("app_reviews", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const badgesRelations = relations(badges, ({ many }) => ({
+  userBadges: many(userBadges),
+}));
+
+export const userBadgesRelations = relations(userBadges, ({ one }) => ({
+  user: one(users, {
+    fields: [userBadges.userId],
+    references: [users.id],
+  }),
+  badge: one(badges, {
+    fields: [userBadges.badgeId],
+    references: [badges.id],
+  }),
+}));
+
 export const appReviewsRelations = relations(appReviews, ({ one }) => ({
   user: one(users, {
     fields: [appReviews.userId],
@@ -162,11 +200,27 @@ export const appReviewsRelations = relations(appReviews, ({ one }) => ({
   }),
 }));
 
+export const insertBadgeSchema = createInsertSchema(badges).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserBadgeSchema = createInsertSchema(userBadges).omit({
+  id: true,
+  earnedAt: true,
+});
+
 export const insertAppReviewSchema = createInsertSchema(appReviews).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
+
+export type InsertBadge = z.infer<typeof insertBadgeSchema>;
+export type Badge = typeof badges.$inferSelect;
+
+export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
+export type UserBadge = typeof userBadges.$inferSelect;
 
 export type InsertAppReview = z.infer<typeof insertAppReviewSchema>;
 export type AppReview = typeof appReviews.$inferSelect;
