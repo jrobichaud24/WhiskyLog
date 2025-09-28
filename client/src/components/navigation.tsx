@@ -5,7 +5,7 @@ import { Link, useLocation } from "wouter";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Helper function to determine if a nav item is active
   const isActive = (path: string) => {
@@ -63,7 +63,7 @@ export default function Navigation() {
             <Button 
               className="bg-amber-500 hover:bg-amber-600 text-white" 
               data-testid="button-get-started"
-              onClick={() => window.location.href = '/signup'}
+              onClick={() => setLocation('/signup')}
             >
               Get Started
             </Button>
@@ -98,7 +98,7 @@ export default function Navigation() {
               <Button 
                 className="bg-amber-500 hover:bg-amber-600 text-white w-fit" 
                 data-testid="mobile-button-get-started"
-                onClick={() => window.location.href = '/signup'}
+                onClick={() => setLocation('/signup')}
               >
                 Get Started
               </Button>
