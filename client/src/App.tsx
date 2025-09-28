@@ -14,6 +14,7 @@ import Reviews from "@/pages/reviews";
 import AdminPage from "@/pages/admin";
 import Discover from "@/pages/discover";
 import Browse from "@/pages/browse";
+import Badges from "@/pages/badges";
 import PWAInstall from "@/components/pwa-install";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/discover" component={Discover} />
       <Route path="/browse" component={Browse} />
+      <Route path="/badges" component={Badges} />
       <Route component={NotFound} />
     </Switch>
   );
