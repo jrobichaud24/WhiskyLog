@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart } from "lucide-react";
+import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
 
-import type { User } from "@shared/schema";
+import type { User, UserBadge } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -20,6 +20,12 @@ export default function Dashboard() {
   // Get user's collection data
   const { data: userProducts = [] } = useQuery<any[]>({
     queryKey: ["/api/user-products"],
+    enabled: !!user,
+  });
+
+  // Get user's badges
+  const { data: userBadges = [] } = useQuery<UserBadge[]>({
+    queryKey: ["/api/user-badges"],
     enabled: !!user,
   });
 
@@ -218,7 +224,71 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Badges Section */}
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 shadow-xl border-amber-200 border-2 mb-8">
+          <CardHeader className="border-b border-amber-200">
+            <CardTitle className="flex items-center justify-between text-2xl text-slate-800">
+              <div className="flex items-center">
+                <Trophy className="h-6 w-6 mr-3 text-amber-600" />
+                Your Achievements
+              </div>
+              <Button 
+                variant="outline" 
+                className="border-amber-300 text-amber-700 hover:bg-amber-100" 
+                onClick={() => setLocation("/badges")}
+                data-testid="button-view-badges"
+              >
+                View All Badges
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Badge Stats */}
+              <div className="text-center space-y-2">
+                <div className="bg-amber-100 p-3 rounded-lg inline-block">
+                  <Award className="h-8 w-8 text-amber-600" />
+                </div>
+                <div className="text-3xl font-bold text-slate-800" data-testid="stat-badges-earned">
+                  {userBadges.length}
+                </div>
+                <div className="text-slate-600 font-medium">Badges Earned</div>
+              </div>
 
+              {/* Recent Badges */}
+              <div className="md:col-span-2">
+                <h4 className="font-semibold text-slate-800 mb-3">Recent Achievements</h4>
+                {userBadges.length > 0 ? (
+                  <div className="space-y-2">
+                    {userBadges.slice(0, 3).map((userBadge, index) => (
+                      <div 
+                        key={userBadge.id} 
+                        className="flex items-center space-x-3 bg-white p-3 rounded-lg border border-amber-200"
+                        data-testid={`recent-badge-${index}`}
+                      >
+                        <div className="bg-amber-100 p-2 rounded-lg">
+                          <Award className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-800">Badge Earned!</div>
+                          <div className="text-sm text-slate-600">
+                            {userBadge.earnedAt ? new Date(userBadge.earnedAt).toLocaleDateString() : 'Recently'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Trophy className="h-12 w-12 text-amber-400 mx-auto mb-3" />
+                    <p className="text-slate-600">No badges earned yet</p>
+                    <p className="text-sm text-slate-500">Start exploring whiskies to earn your first achievement!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Admin Navigation - Only show for admin users */}
         {user.isAdmin && (
