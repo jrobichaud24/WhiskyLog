@@ -5,10 +5,12 @@ import {
   type Distillery, type InsertDistillery,
   type Product, type InsertProduct,
   type UserProduct, type InsertUserProduct,
-  type AppReview, type InsertAppReview
+  type AppReview, type InsertAppReview,
+  type Badge, type InsertBadge,
+  type UserBadge, type InsertUserBadge
 } from "@shared/schema";
 import { db } from "./db";
-import { users, whiskies, userWhiskies, distilleries, products, userProducts, appReviews } from "@shared/schema";
+import { users, whiskies, userWhiskies, distilleries, products, userProducts, appReviews, badges, userBadges } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
@@ -60,6 +62,17 @@ export interface IStorage {
   getAppReviews(): Promise<AppReview[]>;
   createAppReview(review: InsertAppReview): Promise<AppReview>;
   getUserAppReview(userId: string): Promise<AppReview | undefined>;
+
+  // Badge operations
+  getBadges(): Promise<Badge[]>;
+  getBadge(id: string): Promise<Badge | undefined>;
+  createBadge(badge: InsertBadge): Promise<Badge>;
+  
+  // User badge operations
+  getUserBadges(userId: string): Promise<UserBadge[]>;
+  getUserBadge(userId: string, badgeId: string): Promise<UserBadge | undefined>;
+  createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge>;
+  updateUserBadgeProgress(id: string, progress: number): Promise<UserBadge | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -316,6 +329,58 @@ export class DatabaseStorage implements IStorage {
       .from(appReviews)
       .where(eq(appReviews.userId, userId));
     return review || undefined;
+  }
+
+  // Badge operations
+  async getBadges(): Promise<Badge[]> {
+    return await db.select().from(badges).where(eq(badges.isActive, true));
+  }
+
+  async getBadge(id: string): Promise<Badge | undefined> {
+    const [badge] = await db.select().from(badges).where(eq(badges.id, id));
+    return badge || undefined;
+  }
+
+  async createBadge(insertBadge: InsertBadge): Promise<Badge> {
+    const [badge] = await db
+      .insert(badges)
+      .values(insertBadge)
+      .returning();
+    return badge;
+  }
+
+  // User badge operations
+  async getUserBadges(userId: string): Promise<UserBadge[]> {
+    return await db
+      .select()
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId))
+      .orderBy(desc(userBadges.earnedAt));
+  }
+
+  async getUserBadge(userId: string, badgeId: string): Promise<UserBadge | undefined> {
+    const [userBadge] = await db
+      .select()
+      .from(userBadges)
+      .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeId, badgeId)));
+    return userBadge || undefined;
+  }
+
+  async createUserBadge(insertUserBadge: InsertUserBadge): Promise<UserBadge> {
+    const [userBadge] = await db
+      .insert(userBadges)
+      .values(insertUserBadge)
+      .returning();
+    return userBadge;
+  }
+
+  async updateUserBadgeProgress(id: string, progress: number): Promise<UserBadge | undefined> {
+    const [userBadge] = await db
+      .update(userBadges)
+      .set({ progress })
+      .where(eq(userBadges.id, id))
+      .returning();
+    return userBadge || undefined;
   }
 }
 
@@ -668,6 +733,48 @@ export class MemStorage implements IStorage {
   }
 
   async getUserAppReview(userId: string): Promise<AppReview | undefined> {
+    return undefined;
+  }
+
+  // Badge operations (not implemented in memory storage)
+  async getBadges(): Promise<Badge[]> {
+    return [];
+  }
+
+  async getBadge(id: string): Promise<Badge | undefined> {
+    return undefined;
+  }
+
+  async createBadge(badge: InsertBadge): Promise<Badge> {
+    const id = randomUUID();
+    const newBadge: Badge = {
+      ...badge,
+      id,
+      createdAt: new Date(),
+    };
+    return newBadge;
+  }
+
+  // User badge operations (not implemented in memory storage)
+  async getUserBadges(userId: string): Promise<UserBadge[]> {
+    return [];
+  }
+
+  async getUserBadge(userId: string, badgeId: string): Promise<UserBadge | undefined> {
+    return undefined;
+  }
+
+  async createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
+    const id = randomUUID();
+    const newUserBadge: UserBadge = {
+      ...userBadge,
+      id,
+      earnedAt: new Date(),
+    };
+    return newUserBadge;
+  }
+
+  async updateUserBadgeProgress(id: string, progress: number): Promise<UserBadge | undefined> {
     return undefined;
   }
 }
