@@ -255,6 +255,26 @@ export default function Discover() {
                     <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 bg-white border-amber-100" data-testid={`card-product-${product.id}`}>
                       <CardContent className="p-6">
                         <div className="space-y-4">
+                          {/* Product Image */}
+                          <div className="w-full h-32 rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                            {product.productImage ? (
+                              <img 
+                                src={product.productImage} 
+                                alt={`${product.name} bottle`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
+                              <Package className="h-8 w-8 mb-1 opacity-50" />
+                              <span className="text-xs text-amber-500 opacity-75">No Image</span>
+                            </div>
+                          </div>
+
                           <div>
                             <h3 className="font-playfair font-bold text-xl text-slate-800 group-hover:text-amber-800 transition-colors line-clamp-2" data-testid={`text-product-name-${product.id}`}>
                               {product.name.replace(/<[^>]*>/g, '')}
