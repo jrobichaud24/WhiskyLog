@@ -110,8 +110,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-3">
               <Button 
-                variant="outline" 
-                className="border-2 border-amber-200 text-amber-200 hover:bg-amber-50 hover:text-amber-700" 
+                className="bg-amber-500 hover:bg-amber-600 text-white" 
                 onClick={() => setLocation("/browse")}
                 data-testid="button-browse-whiskies"
               >
@@ -119,8 +118,7 @@ export default function Dashboard() {
               </Button>
               
               <Button
-                variant="outline"
-                className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
+                className="bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
                 data-testid="button-logout"
