@@ -9,6 +9,8 @@ import {
   insertProductSchema,
   insertUserProductSchema,
   insertAppReviewSchema,
+  insertBadgeSchema,
+  insertUserBadgeSchema,
   bulkDistillerySchema,
   bulkProductSchema
 } from "@shared/schema";
@@ -589,6 +591,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Create review error:", error);
       res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Badge routes
+  app.get("/api/badges", async (req, res) => {
+    try {
+      const badges = await storage.getBadges();
+      res.json(badges);
+    } catch (error) {
+      console.error("Get badges error:", error);
+      res.status(500).json({ message: "Failed to fetch badges" });
+    }
+  });
+
+  app.get("/api/user-badges", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userBadges = await storage.getUserBadges(req.session.userId);
+      res.json(userBadges);
+    } catch (error) {
+      console.error("Get user badges error:", error);
+      res.status(500).json({ message: "Failed to fetch user badges" });
+    }
+  });
+
+  app.post("/api/user-badges", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const validatedData = insertUserBadgeSchema.parse({
+        ...req.body,
+        userId: req.session.userId,
+      });
+
+      // Check if user already has this badge
+      const existingBadge = await storage.getUserBadge(req.session.userId, validatedData.badgeId);
+      if (existingBadge) {
+        return res.status(400).json({ message: "Badge already earned" });
+      }
+
+      const userBadge = await storage.createUserBadge(validatedData);
+      res.status(201).json(userBadge);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create user badge error:", error);
+      res.status(500).json({ message: "Failed to create user badge" });
     }
   });
 
