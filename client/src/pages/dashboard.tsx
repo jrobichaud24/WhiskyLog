@@ -110,20 +110,6 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-3">
               <Button 
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
-                onClick={() => {
-                  toast({
-                    title: "Add Whisky",
-                    description: "Navigate to browse page to add whiskies to your collection.",
-                  });
-                }}
-                data-testid="button-add-whisky"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Whisky to Collection
-              </Button>
-              
-              <Button 
                 variant="outline" 
                 className="border-2 border-amber-200 text-amber-200 hover:bg-amber-50 hover:text-amber-700" 
                 onClick={() => setLocation("/browse")}
