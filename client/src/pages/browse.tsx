@@ -30,6 +30,8 @@ import {
   Check,
   Package
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLogout } from "@/hooks/useLogout";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Browse() {
@@ -41,11 +43,7 @@ export default function Browse() {
   const [tastingNotes, setTastingNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // User authentication
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-    retry: false
-  });
+  const { user, isLoading: userLoading } = useAuth();
 
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,27 +69,7 @@ export default function Browse() {
     enabled: !!user,
   });
 
-  // Logout functionality
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("/api/auth/logout", { method: "POST" });
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      toast({
-        title: "Logged out successfully",
-        description: "See you next time!",
-      });
-      setLocation("/");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
+  const logoutMutation = useLogout();
 
   // Create distillery map for lookups
   const distilleryMap = distilleries.reduce((acc, distillery) => {

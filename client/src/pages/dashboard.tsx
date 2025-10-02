@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLogout } from "@/hooks/useLogout";
 
 import type { User, UserBadge } from "@shared/schema";
 
@@ -12,10 +14,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-    retry: false
-  });
+  const { user, isLoading: userLoading } = useAuth();
 
   // Get user's collection data
   const { data: userProducts = [] } = useQuery<any[]>({
@@ -29,28 +28,7 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-
-
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("/api/auth/logout", { method: "POST" });
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      toast({
-        title: "Logged out successfully",
-        description: "See you next time!",
-      });
-      setLocation("/");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
+  const logoutMutation = useLogout();
 
   if (userLoading) {
     return (

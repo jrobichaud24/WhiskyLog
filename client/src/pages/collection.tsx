@@ -20,16 +20,15 @@ import {
   Trash2,
   Calendar
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLogout } from "@/hooks/useLogout";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Collection() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-    retry: false
-  });
+  const { user, isLoading: userLoading } = useAuth();
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"]
@@ -45,26 +44,7 @@ export default function Collection() {
     enabled: !!user,
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("/api/auth/logout", { method: "POST" });
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      toast({
-        title: "Logged out successfully",
-        description: "See you next time!",
-      });
-      setLocation("/");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
+  const logoutMutation = useLogout();
 
   // Remove from collection mutation
   const removeFromCollectionMutation = useMutation({
