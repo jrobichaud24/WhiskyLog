@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,12 @@ export default function Browse() {
   });
 
   const logoutMutation = useLogout();
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, userLoading, setLocation]);
 
   // Create distillery map for lookups
   const distilleryMap = distilleries.reduce((acc, distillery) => {
@@ -297,7 +303,7 @@ export default function Browse() {
     return (userProducts as any[]).some((up: any) => up.productId === productId && up.owned);
   };
 
-  if (userLoading) {
+  if (userLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center">
         <div className="text-center">
@@ -312,11 +318,6 @@ export default function Browse() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    setLocation("/login");
-    return null;
   }
 
   return (

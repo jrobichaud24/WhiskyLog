@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,12 @@ export default function Dashboard() {
 
   const { user, isLoading: userLoading } = useAuth();
 
+  useEffect(() => {
+    if (!userLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, userLoading, setLocation]);
+
   // Get user's collection data
   const { data: userProducts = [] } = useQuery<any[]>({
     queryKey: ["/api/user-products"],
@@ -30,7 +37,7 @@ export default function Dashboard() {
 
   const logoutMutation = useLogout();
 
-  if (userLoading) {
+  if (userLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center">
         <div className="text-center">
@@ -45,11 +52,6 @@ export default function Dashboard() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    setLocation("/login");
-    return null;
   }
 
   // Calculate statistics from user's collection
