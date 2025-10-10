@@ -1055,6 +1055,37 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-3">
+                          {/* Product Image */}
+                          <div className="flex-shrink-0">
+                            <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg overflow-hidden">
+                              {product.productImage ? (
+                                <img 
+                                  src={product.productImage} 
+                                  alt={`${product.name} bottle`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.classList.add('flex', 'items-center', 'justify-center');
+                                      const icon = document.createElement('svg');
+                                      icon.setAttribute('class', 'w-6 h-6 text-amber-700');
+                                      icon.setAttribute('fill', 'none');
+                                      icon.setAttribute('stroke', 'currentColor');
+                                      icon.setAttribute('viewBox', '0 0 24 24');
+                                      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>';
+                                      parent.appendChild(icon);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-amber-700" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           <div className="flex-1">
                             <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-product-name-${product.id}`}>
                               {product.name}
