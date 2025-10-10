@@ -751,6 +751,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import whiskies from TheWhiskyEdition API
+  app.post("/api/admin/import-whiskies", requireAdmin, async (req, res) => {
+    try {
+      const stats = {
+        totalFetched: 0,
+        newDistilleries: 0,
+        newProducts: 0,
+        skippedProducts: 0,
+        errors: [] as string[],
+      };
+
+      const BATCH_SIZE = 20;
+      const API_BASE = "https://thewhiskyedition.com/api";
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        try {
+          // Fetch whiskies from TheWhiskyEdition API
+          const response = await fetch(`${API_BASE}/whisky/get?limit=${BATCH_SIZE}&offset=${offset}`);
+          
+          if (!response.ok) {
+            throw new Error(`API request failed: ${response.statusText}`);
+          }
+
+          const whiskies = await response.json();
+          
+          if (!Array.isArray(whiskies) || whiskies.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          stats.totalFetched += whiskies.length;
+
+          // Process each whisky
+          for (const whisky of whiskies) {
+            try {
+              const distilleryName = whisky.metadata?.distillery;
+              const region = whisky.metadata?.region || "Unknown";
+              const country = whisky.metadata?.country || "Scotland";
+
+              // Skip if no distillery name
+              if (!distilleryName) {
+                stats.skippedProducts++;
+                continue;
+              }
+
+              // Check if distillery exists, create if not
+              let distillery = await storage.getDistilleryByName(distilleryName);
+              if (!distillery) {
+                distillery = await storage.createDistillery({
+                  name: distilleryName,
+                  region: region,
+                  country: country,
+                  description: `Distillery for ${distilleryName}`,
+                });
+                stats.newDistilleries++;
+              }
+
+              // Check if product already exists
+              const existingProduct = await storage.getProductByNameAndDistillery(
+                whisky.name,
+                distillery.id
+              );
+
+              if (existingProduct) {
+                stats.skippedProducts++;
+                continue;
+              }
+
+              // Create product
+              await storage.createProduct({
+                name: whisky.name,
+                distillery: distillery.id,
+                description: whisky.description || whisky.tasting_notes?.description || null,
+                tastingNose: whisky.tasting_notes?.nose || null,
+                tastingTaste: whisky.tasting_notes?.palate || null,
+                tastingFinish: whisky.tasting_notes?.finish || null,
+                abvPercent: whisky.metadata?.abv ? String(whisky.metadata.abv) : null,
+                price: whisky.metadata?.price ? String(whisky.metadata.price) : null,
+                productImage: whisky.image_url || whisky.foto_url || null,
+                productUrl: whisky.url || null,
+                createdByUserId: null, // Imported from external API
+              });
+              
+              stats.newProducts++;
+            } catch (error) {
+              console.error(`Error processing whisky ${whisky.name}:`, error);
+              stats.errors.push(`Failed to import ${whisky.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          }
+
+          // Move to next batch
+          offset += BATCH_SIZE;
+
+          // Stop if we got less than the batch size (last page)
+          if (whiskies.length < BATCH_SIZE) {
+            hasMore = false;
+          }
+
+        } catch (error) {
+          console.error("Error fetching batch:", error);
+          stats.errors.push(`Batch fetch error at offset ${offset}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          hasMore = false;
+        }
+      }
+
+      res.json({
+        message: "Import completed",
+        stats,
+      });
+
+    } catch (error) {
+      console.error("Import whiskies error:", error);
+      res.status(500).json({ 
+        message: "Failed to import whiskies",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Image analysis endpoint for bottle scanning
   app.post("/api/analyze-bottle", async (req, res) => {
     if (!req.session.userId) {

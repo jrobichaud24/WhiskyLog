@@ -628,6 +628,8 @@ export class MemStorage implements IStorage {
       tastingTaste: insertProduct.tastingTaste || null,
       tastingFinish: insertProduct.tastingFinish || null,
       productUrl: insertProduct.productUrl || null,
+      productImage: insertProduct.productImage || null,
+      createdByUserId: insertProduct.createdByUserId || null,
     };
     return product;
   }
@@ -649,6 +651,8 @@ export class MemStorage implements IStorage {
       tastingTaste: p.tastingTaste || null,
       tastingFinish: p.tastingFinish || null,
       productUrl: p.productUrl || null,
+      productImage: p.productImage || null,
+      createdByUserId: p.createdByUserId || null,
     }));
   }
 
@@ -764,6 +768,8 @@ export class MemStorage implements IStorage {
       ...badge,
       id,
       createdAt: new Date(),
+      rarity: badge.rarity || "common",
+      isActive: badge.isActive !== undefined ? badge.isActive : true,
     };
     return newBadge;
   }
@@ -783,6 +789,8 @@ export class MemStorage implements IStorage {
       ...userBadge,
       id,
       earnedAt: new Date(),
+      progress: userBadge.progress || 0,
+      maxProgress: userBadge.maxProgress || 1,
     };
     return newUserBadge;
   }
