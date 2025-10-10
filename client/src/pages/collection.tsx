@@ -209,10 +209,35 @@ export default function Collection() {
               <Card key={userProduct.id} className="bg-white/90 backdrop-blur-sm shadow-xl border-0 hover:shadow-2xl transition-shadow">
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 items-start">
-                    {/* Product Image Placeholder */}
+                    {/* Product Image */}
                     <div className="lg:col-span-1">
-                      <div className="w-full h-32 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center shadow-inner">
-                        <Building2 className="w-8 h-8 text-amber-700" />
+                      <div className="w-full h-32 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl overflow-hidden shadow-inner">
+                        {product?.productImage ? (
+                          <img 
+                            src={product.productImage} 
+                            alt={`${product.name} bottle`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.classList.add('flex', 'items-center', 'justify-center');
+                                const icon = document.createElement('svg');
+                                icon.setAttribute('class', 'w-8 h-8 text-amber-700');
+                                icon.setAttribute('fill', 'none');
+                                icon.setAttribute('stroke', 'currentColor');
+                                icon.setAttribute('viewBox', '0 0 24 24');
+                                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>';
+                                parent.appendChild(icon);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building2 className="w-8 h-8 text-amber-700" />
+                          </div>
+                        )}
                       </div>
                     </div>
 
