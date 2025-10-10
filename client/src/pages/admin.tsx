@@ -608,20 +608,61 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   // TheWhiskyEdition API import mutation
   const apiImportMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/admin/import-whiskies", {
-        method: "POST",
-      });
+      console.log("Starting import mutation...");
+      
+      // Create an AbortController with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log("Import timeout reached, aborting...");
+        controller.abort();
+      }, 90000); // 90 second timeout (enough for multiple batches)
+      
+      try {
+        const response = await fetch("/api/admin/import-whiskies", {
+          method: "POST",
+          credentials: "include",
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${response.status}: ${text}`);
+        }
+        
+        const data = await response.json();
+        console.log("Import API response:", data);
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Import timeout after 90 seconds - the operation may still be running on the server');
+        }
+        throw error;
+      }
     },
     onSuccess: (result) => {
-      setApiImportStats(result.stats);
-      toast({
-        title: "Import Completed",
-        description: `Imported ${result.stats.newProducts} products and ${result.stats.newDistilleries} distilleries`,
-      });
+      console.log("Import success, result:", result);
+      if (result && result.stats) {
+        setApiImportStats(result.stats);
+        toast({
+          title: "Import Completed",
+          description: `Imported ${result.stats.newProducts} products and ${result.stats.newDistilleries} distilleries`,
+        });
+      } else {
+        console.error("Unexpected response format:", result);
+        toast({
+          title: "Import Completed",
+          description: "Import finished but response format was unexpected",
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
     },
     onError: (error: any) => {
+      console.error("Import error:", error);
+      setApiImportStats(null); // Clear stats on error to allow retry
       toast({
         title: "Import Failed",
         description: error.message || "Failed to import from TheWhiskyEdition API",

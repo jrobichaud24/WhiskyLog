@@ -753,6 +753,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Import whiskies from TheWhiskyEdition API
   app.post("/api/admin/import-whiskies", requireAdmin, async (req, res) => {
+    console.log("[Import] Starting TheWhiskyEdition API import");
+    
     try {
       const stats = {
         totalFetched: 0,
@@ -762,21 +764,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as string[],
       };
 
-      const BATCH_SIZE = 20;
+      const BATCH_SIZE = 50; // Increased batch size for faster import
+      const MAX_BATCHES = 10; // Limit to prevent infinite loops
       const API_BASE = "https://thewhiskyedition.com/api";
       let offset = 0;
+      let batchCount = 0;
       let hasMore = true;
 
-      while (hasMore) {
+      while (hasMore && batchCount < MAX_BATCHES) {
         try {
-          // Fetch whiskies from TheWhiskyEdition API
-          const response = await fetch(`${API_BASE}/whisky/get?limit=${BATCH_SIZE}&offset=${offset}`);
+          console.log(`[Import] Fetching batch ${batchCount + 1}, offset ${offset}`);
+          
+          // Fetch whiskies from TheWhiskyEdition API with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout per request
+          
+          const response = await fetch(`${API_BASE}/whisky/get?limit=${BATCH_SIZE}&offset=${offset}`, {
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
           
           if (!response.ok) {
             throw new Error(`API request failed: ${response.statusText}`);
           }
 
           const whiskies = await response.json();
+          console.log(`[Import] Received ${whiskies.length} whiskies`);
           
           if (!Array.isArray(whiskies) || whiskies.length === 0) {
             hasMore = false;
@@ -845,6 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Move to next batch
           offset += BATCH_SIZE;
+          batchCount++;
 
           // Stop if we got less than the batch size (last page)
           if (whiskies.length < BATCH_SIZE) {
@@ -852,19 +866,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
         } catch (error) {
-          console.error("Error fetching batch:", error);
-          stats.errors.push(`Batch fetch error at offset ${offset}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.error("[Import] Error fetching batch:", error);
+          if (error instanceof Error && error.name === 'AbortError') {
+            stats.errors.push(`Batch ${batchCount + 1} timeout after 10 seconds`);
+          } else {
+            stats.errors.push(`Batch fetch error at offset ${offset}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
           hasMore = false;
         }
       }
 
+      console.log("[Import] Import completed:", stats);
+      
       res.json({
         message: "Import completed",
         stats,
       });
 
     } catch (error) {
-      console.error("Import whiskies error:", error);
+      console.error("[Import] Import whiskies error:", error);
       res.status(500).json({ 
         message: "Failed to import whiskies",
         error: error instanceof Error ? error.message : 'Unknown error'
