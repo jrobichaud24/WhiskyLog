@@ -353,6 +353,38 @@ export default function Discover() {
             )}
           </div>
         )}
+        
+        {/* Creative Commons Attribution */}
+        {products.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-slate-200">
+            <div className="text-center text-sm text-slate-600 space-y-2">
+              <p>
+                Product information and images are sourced from{' '}
+                <a 
+                  href="https://thewhiskyedition.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  TheWhiskyEdition.com
+                </a>
+                {' '}and used under the{' '}
+                <a 
+                  href="https://creativecommons.org/licenses/by/4.0/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  Creative Commons Attribution 4.0 International License
+                </a>
+                .
+              </p>
+              <p className="text-xs text-slate-500">
+                © TheWhiskyEdition.com - Content may have been adapted for display on this platform.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
