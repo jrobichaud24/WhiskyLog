@@ -603,6 +603,32 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   const [bulkData, setBulkData] = useState("");
   const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [apiImportStats, setApiImportStats] = useState<any>(null);
+
+  // TheWhiskyEdition API import mutation
+  const apiImportMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/admin/import-whiskies", {
+        method: "POST",
+      });
+    },
+    onSuccess: (result) => {
+      setApiImportStats(result.stats);
+      toast({
+        title: "Import Completed",
+        description: `Imported ${result.stats.newProducts} products and ${result.stats.newDistilleries} distilleries`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import from TheWhiskyEdition API",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Bulk import mutation
   const bulkImportMutation = useMutation({
@@ -713,6 +739,74 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
 
   return (
     <div className="space-y-6">
+      {/* TheWhiskyEdition API Import */}
+      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Globe className="h-5 w-5 text-purple-600" />
+            <span>Import from TheWhiskyEdition API</span>
+          </CardTitle>
+          <CardDescription>
+            Automatically import whiskies from TheWhiskyEdition.com database. This will fetch all available whiskies, create missing distilleries, and import products with tasting notes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={() => apiImportMutation.mutate()}
+            disabled={apiImportMutation.isPending}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            data-testid="button-import-api"
+          >
+            {apiImportMutation.isPending ? (
+              <>
+                <Upload className="h-4 w-4 mr-2 animate-pulse" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Start Import
+              </>
+            )}
+          </Button>
+          
+          {apiImportStats && (
+            <div className="mt-4 p-4 bg-white rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-slate-800 mb-3">Import Results:</h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-slate-600">Whiskies Fetched:</span>
+                  <span className="ml-2 font-semibold text-slate-800">{apiImportStats.totalFetched}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">New Products:</span>
+                  <span className="ml-2 font-semibold text-green-600">{apiImportStats.newProducts}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">New Distilleries:</span>
+                  <span className="ml-2 font-semibold text-blue-600">{apiImportStats.newDistilleries}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">Skipped (Duplicates):</span>
+                  <span className="ml-2 font-semibold text-amber-600">{apiImportStats.skippedProducts}</span>
+                </div>
+              </div>
+              {apiImportStats.errors && apiImportStats.errors.length > 0 && (
+                <div className="mt-3 p-2 bg-red-50 rounded text-xs text-red-700">
+                  <p className="font-semibold mb-1">Errors ({apiImportStats.errors.length}):</p>
+                  {apiImportStats.errors.slice(0, 3).map((error: string, i: number) => (
+                    <p key={i}>• {error}</p>
+                  ))}
+                  {apiImportStats.errors.length > 3 && (
+                    <p className="mt-1 text-red-600">... and {apiImportStats.errors.length - 3} more</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Actions */}
       <div className="flex justify-between items-center">
         <div>
