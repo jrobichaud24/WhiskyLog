@@ -40,6 +40,7 @@ Preferred communication style: Simple, everyday language.
 - Comprehensive error handling with structured JSON responses.
 - Request logging middleware.
 - Bulk import endpoints for distilleries and products via CSV/JSON.
+- TheWhiskyEdition API integration for automated whisky database imports.
 
 ## Key Features
 - **Progressive Web App (PWA)**: Full offline capabilities, installable as a native app on devices.
@@ -54,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **Authentication System**: Complete user signup, login, password reset, and dashboard integration with secure session handling.
 - **Dashboard Design**: Premium Scottish Highland aesthetic with sophisticated UI elements.
 - **CSV Bulk Import System**: Admin utility for CSV-to-JSON conversion with drag-and-drop, data preview, and intelligent parsing.
+- **TheWhiskyEdition API Import**: One-click admin tool to import 400+ whiskies from TheWhiskyEdition.com database with automatic duplicate detection, batch processing (50 per batch), timeout handling (90s client, 10s per request), and comprehensive error reporting.
 
 # External Dependencies
 
@@ -62,3 +64,4 @@ Preferred communication style: Simple, everyday language.
 - **Images**: Unsplash for hero sections.
 - **Icons**: Lucide React.
 - **Development Tools**: Replit-specific plugins.
+- **External APIs**: TheWhiskyEdition.com API (https://thewhiskyedition.com/openapi.yaml) for whisky product database imports.
