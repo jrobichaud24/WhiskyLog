@@ -37,6 +37,7 @@ export interface IStorage {
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   getProductsByDistillery(distilleryId: string): Promise<Product[]>;
+  getProductByNameAndDistillery(name: string, distilleryId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   bulkCreateProducts(products: InsertProduct[]): Promise<Product[]>;
   
@@ -119,6 +120,14 @@ export class DatabaseStorage implements IStorage {
 
   async getProductsByDistillery(distilleryId: string): Promise<Product[]> {
     return await db.select().from(products).where(eq(products.distillery, distilleryId));
+  }
+
+  async getProductByNameAndDistillery(name: string, distilleryId: string): Promise<Product | undefined> {
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(and(eq(products.name, name), eq(products.distillery, distilleryId)));
+    return product || undefined;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
@@ -595,6 +604,10 @@ export class MemStorage implements IStorage {
 
   async getProductsByDistillery(distilleryId: string): Promise<Product[]> {
     return [];
+  }
+
+  async getProductByNameAndDistillery(name: string, distilleryId: string): Promise<Product | undefined> {
+    return undefined;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
