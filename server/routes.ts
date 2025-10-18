@@ -344,6 +344,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Featured products for home page
+  app.get("/api/products/featured", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      // Return first 6 products for featured section
+      res.json(products.slice(0, 6));
+    } catch (error) {
+      console.error("Get featured products error:", error);
+      res.status(500).json({ message: "Failed to fetch featured products" });
+    }
+  });
+
   app.get("/api/products/:id", async (req, res) => {
     try {
       const product = await storage.getProduct(req.params.id);
