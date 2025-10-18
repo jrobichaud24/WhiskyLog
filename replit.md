@@ -24,7 +24,14 @@ Preferred communication style: Simple, everyday language.
 - **Development**: Hot reloading with Vite integration for full-stack development.
 
 ## Data Storage Solutions
-- **Primary Database**: PostgreSQL with three main entities: `users` (authentication, profile), `whiskies` (catalog, details), and `user_whiskies` (junction table for ratings, notes, collection status).
+- **Primary Database**: PostgreSQL with main entities:
+  - `users` - User authentication and profiles
+  - `distilleries` - Master list of Scottish distilleries
+  - `products` - Whisky products catalog with comprehensive details and tasting notes
+  - `user_products` - Junction table tracking user collections, ratings, and tasting notes
+  - `badges` - Achievement badges system
+  - `user_badges` - User badge progress tracking
+  - `app_reviews` - User reviews and ratings of the app
 - **Session Storage**: PostgreSQL sessions using connect-pg-simple.
 - **Development Storage**: In-memory storage for development/testing.
 
@@ -36,7 +43,8 @@ Preferred communication style: Simple, everyday language.
 
 ## API Structure
 - RESTful API design with `/api` prefix.
-- CRUD operations for whiskies and user-specific whisky operations.
+- CRUD operations for products, distilleries, and user-specific product operations.
+- Featured products endpoint (`/api/products/featured`) for home page display.
 - Comprehensive error handling with structured JSON responses.
 - Request logging middleware.
 - Bulk import endpoints for distilleries and products via CSV/JSON.
@@ -48,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **App Reviews System**: Star ratings and comments with authentication.
 - **Scottish Region Imagery**: Authentic landscape images for 6 whisky regions.
 - **User Collection Page**: Dedicated page to display and manage user's owned whiskies with remove functionality.
+- **Database Cleanup (Oct 2025)**: Removed deprecated `whiskies` and `user_whiskies` tables, migrated fully to `products` and `user_products` schema.
 - **Dynamic Distillery Showcase**: Displays real distillery counts from the database, integrated with React Query.
 - **Products Table Schema**: Redesigned to include comprehensive tasting notes and product details.
 - **User Administration System**: Admin roles, protected routes, and user promotion/demotion.
