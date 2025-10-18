@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Smartphone, Play, Check } from "lucide-react";
+import { ChevronDown, Smartphone, Check } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 export default function HeroSection() {
@@ -25,7 +25,7 @@ export default function HeroSection() {
           Track, rate, and discover exceptional single malt scotch whiskies. 
           Build your personal collection and connect with fellow enthusiasts.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="flex justify-center items-center">
           <Button 
             size="lg"
             className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all"
@@ -44,15 +44,6 @@ export default function HeroSection() {
                 Install App
               </>
             )}
-          </Button>
-          <Button 
-            variant="outline"
-            size="lg"
-            className="border-2 border-white text-white hover:bg-white hover:text-gray-800 px-8 py-4 text-lg font-semibold"
-            data-testid="button-watch-demo"
-          >
-            <Play className="mr-2 h-5 w-5" />
-            Watch Demo
           </Button>
         </div>
       </div>
