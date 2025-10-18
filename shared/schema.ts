@@ -49,30 +49,6 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Keep whiskies table for backward compatibility, but reference products
-export const whiskies = pgTable("whiskies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  distillery: text("distillery").notNull(),
-  region: text("region").notNull(),
-  age: integer("age"),
-  abv: decimal("abv", { precision: 4, scale: 1 }),
-  description: text("description"),
-  imageUrl: text("image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const userWhiskies = pgTable("user_whiskies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  whiskyId: varchar("whisky_id").notNull().references(() => whiskies.id),
-  rating: integer("rating"), // 1-5 scale
-  tastingNotes: text("tasting_notes"),
-  owned: boolean("owned").default(false),
-  wishlist: boolean("wishlist").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 // User products table - for tracking user's personal whisky collection with products
 export const userProducts = pgTable("user_products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -106,16 +82,6 @@ export const insertProductSchema = createInsertSchema(products).omit({
   updatedAt: true,
 });
 
-export const insertWhiskySchema = createInsertSchema(whiskies).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertUserWhiskySchema = createInsertSchema(userWhiskies).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertUserProductSchema = createInsertSchema(userProducts).omit({
   id: true,
   createdAt: true,
@@ -134,12 +100,6 @@ export type Distillery = typeof distilleries.$inferSelect;
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
-
-export type InsertWhisky = z.infer<typeof insertWhiskySchema>;
-export type Whisky = typeof whiskies.$inferSelect;
-
-export type InsertUserWhisky = z.infer<typeof insertUserWhiskySchema>;
-export type UserWhisky = typeof userWhiskies.$inferSelect;
 
 export type InsertUserProduct = z.infer<typeof insertUserProductSchema>;
 export type UserProduct = typeof userProducts.$inferSelect;
