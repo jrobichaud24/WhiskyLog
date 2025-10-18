@@ -3,7 +3,6 @@ import HeroSection from "@/components/hero-section";
 import FeaturedWhiskies from "@/components/featured-whiskies";
 import FeaturesSection from "@/components/features-section";
 import DistilleryShowcase from "@/components/distillery-showcase";
-import CallToAction from "@/components/call-to-action";
 import Footer from "@/components/footer";
 
 export default function Home() {
@@ -14,7 +13,6 @@ export default function Home() {
       <FeaturedWhiskies />
       <FeaturesSection />
       <DistilleryShowcase />
-      <CallToAction />
       <Footer />
     </div>
   );
