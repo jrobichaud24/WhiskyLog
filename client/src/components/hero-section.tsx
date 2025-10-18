@@ -1,14 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Smartphone, Play } from "lucide-react";
+import { ChevronDown, Smartphone, Play, Check } from "lucide-react";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 export default function HeroSection() {
-  const handleInstallApp = () => {
-    // Check if browser supports PWA installation
-    if ('serviceWorker' in navigator) {
-      // Trigger PWA install prompt if available
-      window.dispatchEvent(new CustomEvent('install-app'));
-    }
-  };
+  const { installApp, canInstall, isInstalled } = usePWAInstall();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16">
@@ -34,11 +29,21 @@ export default function HeroSection() {
           <Button 
             size="lg"
             className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all"
-            onClick={handleInstallApp}
+            onClick={installApp}
+            disabled={isInstalled}
             data-testid="button-install-app"
           >
-            <Smartphone className="mr-2 h-5 w-5" />
-            Install App
+            {isInstalled ? (
+              <>
+                <Check className="mr-2 h-5 w-5" />
+                App Installed
+              </>
+            ) : (
+              <>
+                <Smartphone className="mr-2 h-5 w-5" />
+                Install App
+              </>
+            )}
           </Button>
           <Button 
             variant="outline"
