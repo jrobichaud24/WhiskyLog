@@ -7,13 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { insertUserSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
-import type { z } from "zod";
+import { ChevronDown } from "lucide-react";
+import { z } from "zod";
 
-type SignupForm = z.infer<typeof insertUserSchema>;
+// Extend the schema to include consent checkbox
+const signupFormSchema = insertUserSchema.extend({
+  consent: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Privacy Policy and Terms of Service"
+  })
+});
+
+type SignupForm = z.infer<typeof signupFormSchema>;
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -22,16 +32,25 @@ export default function Signup() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
+    setValue,
+    watch
   } = useForm<SignupForm>({
-    resolver: zodResolver(insertUserSchema)
+    resolver: zodResolver(signupFormSchema),
+    defaultValues: {
+      consent: false
+    }
   });
+
+  const consentValue = watch("consent");
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
+      // Remove consent field before sending to API
+      const { consent, ...userData } = data;
       const response = await apiRequest("/api/auth/signup", {
         method: "POST",
-        body: data
+        body: userData
       });
       return response;
     },
@@ -168,6 +187,104 @@ export default function Signup() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+
+              {/* Privacy & Terms Section */}
+              <div className="space-y-4 pt-4 border-t border-gray-200" data-testid="section-privacy-terms">
+                <div className="space-y-3">
+                  <h2 className="font-playfair text-lg font-semibold text-gray-900">
+                    Privacy & Terms Summary
+                  </h2>
+                  <div className="text-sm text-gray-700 space-y-2">
+                    <p>
+                      At <strong>The Dram Journal</strong>, we collect just what's needed to create your account—
+                      first name, last name, email, username, and password—so you can browse whisky info,
+                      log tastings, add ratings, and save notes securely. We <strong>never sell</strong> your data or
+                      share it for marketing. You can update or delete your account anytime.
+                    </p>
+                    <p>
+                      By signing up, you agree to our{" "}
+                      <a 
+                        href="/privacy-policy" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-amber-600 hover:text-amber-700 underline font-medium"
+                        data-testid="link-privacy-policy"
+                      >
+                        Privacy Policy
+                      </a>{" "}
+                      and{" "}
+                      <a 
+                        href="/terms-of-service" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-amber-600 hover:text-amber-700 underline font-medium"
+                        data-testid="link-terms-of-service"
+                      >
+                        Terms of Service
+                      </a>
+                      , which explain your rights under U.S., Canadian (PIPEDA), and EU/UK (GDPR) laws.
+                    </p>
+                  </div>
+
+                  <Collapsible className="space-y-2">
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-amber-700 hover:text-amber-800" data-testid="button-expand-privacy-details">
+                      <ChevronDown className="h-4 w-4" />
+                      What does this mean for you?
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2">
+                      <ul className="text-sm text-gray-700 space-y-1 ml-6 list-disc" data-testid="list-privacy-details">
+                        <li>Access, correct, or delete your data anytime.</li>
+                        <li>Passwords are stored securely (hashed).</li>
+                        <li>We use cookies/local storage only for functionality (e.g., session, preferences).</li>
+                        <li>If required, we use lawful transfer safeguards (e.g., SCCs) for cross-border data.</li>
+                      </ul>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <div className="flex items-start gap-3 pt-2">
+                    <Checkbox
+                      id="consent"
+                      checked={consentValue}
+                      onCheckedChange={(checked) => setValue("consent", checked as boolean)}
+                      className="mt-1"
+                      data-testid="checkbox-consent"
+                    />
+                    <div className="flex-1">
+                      <Label 
+                        htmlFor="consent" 
+                        className="text-sm text-gray-700 cursor-pointer leading-relaxed"
+                      >
+                        I have read and agree to the{" "}
+                        <a 
+                          href="/privacy-policy" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-amber-600 hover:text-amber-700 underline font-medium"
+                          data-testid="link-consent-privacy"
+                        >
+                          Privacy Policy
+                        </a>{" "}
+                        and{" "}
+                        <a 
+                          href="/terms-of-service" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-amber-600 hover:text-amber-700 underline font-medium"
+                          data-testid="link-consent-terms"
+                        >
+                          Terms of Service
+                        </a>
+                        .
+                      </Label>
+                      {errors.consent && (
+                        <p className="text-sm text-red-600 mt-1" data-testid="error-consent">
+                          {errors.consent.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <Button
