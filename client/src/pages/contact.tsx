@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { useState } from "react";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -22,6 +23,7 @@ type ContactFormValues = z.infer<typeof contactFormSchema>;
 
 export default function Contact() {
   const { toast } = useToast();
+  const [honeypot, setHoneypot] = useState("");
   
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
@@ -34,6 +36,15 @@ export default function Contact() {
   });
 
   const onSubmit = async (data: ContactFormValues) => {
+    // Honeypot check - if filled, this is likely a bot
+    if (honeypot) {
+      console.log("Bot detected - honeypot field was filled");
+      // Silently reject the submission without feedback to the bot
+      form.reset();
+      setHoneypot("");
+      return;
+    }
+
     try {
       const response = await fetch('https://formsubmit.co/ajax/thedramjournal@outlook.com', {
         method: 'POST',
@@ -217,6 +228,21 @@ export default function Contact() {
                     </FormItem>
                   )}
                 />
+
+                {/* Honeypot field - hidden from users but bots may fill it */}
+                <div style={{ display: 'none' }}>
+                  <label htmlFor="website">Website</label>
+                  <Input
+                    type="text"
+                    id="website"
+                    name="website"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                  />
+                </div>
 
                 <Button 
                   type="submit" 
