@@ -46,7 +46,7 @@ export default function Contact() {
     }
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/thedramjournal@outlook.com', {
+      const response = await fetch('https://formsubmit.co/ajax/5269524351507551393e6e68721463c0', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
