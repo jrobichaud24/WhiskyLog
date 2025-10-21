@@ -9,14 +9,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin } from "lucide-react";
 import { useState } from "react";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  subject: z.string().min(5, "Subject must be at least 5 characters"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  subject: z.string().min(1, "Subject is required"),
+  message: z.string().min(1, "Message is required"),
 });
 
 type ContactFormValues = z.infer<typeof contactFormSchema>;
@@ -93,56 +92,6 @@ export default function Contact() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto" data-testid="text-contact-description">
             Have a question or feedback? We'd love to hear from you.
           </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
-          <Card data-testid="card-contact-email">
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-amber-100 rounded-lg">
-                  <Mail className="h-6 w-6 text-amber-600" />
-                </div>
-                <CardTitle>Email</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">
-                support@thedramjournal.com
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-contact-phone">
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-amber-100 rounded-lg">
-                  <Phone className="h-6 w-6 text-amber-600" />
-                </div>
-                <CardTitle>Phone</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">
-                Available Mon-Fri, 9am-5pm GMT
-              </CardDescription>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-contact-location">
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-amber-100 rounded-lg">
-                  <MapPin className="h-6 w-6 text-amber-600" />
-                </div>
-                <CardTitle>Location</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">
-                Edinburgh, Scotland
-              </CardDescription>
-            </CardContent>
-          </Card>
         </div>
 
         <Card className="max-w-3xl mx-auto" data-testid="card-contact-form">
