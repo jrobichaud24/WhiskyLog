@@ -34,18 +34,53 @@ export default function Contact() {
   });
 
   const onSubmit = async (data: ContactFormValues) => {
-    console.log("Contact form submitted:", data);
-    
-    toast({
-      title: "Message sent!",
-      description: "Thank you for contacting us. We'll get back to you soon.",
-    });
-    
-    form.reset();
+    try {
+      const hiddenForm = document.createElement('form');
+      hiddenForm.action = 'https://formsubmit.io/send/thedramjournal@outlook.com';
+      hiddenForm.method = 'POST';
+      hiddenForm.target = 'formsubmit_iframe';
+      hiddenForm.style.display = 'none';
+      
+      Object.entries(data).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        hiddenForm.appendChild(input);
+      });
+      
+      const honeypot = document.createElement('input');
+      honeypot.type = 'text';
+      honeypot.name = '_formsubmit_id';
+      honeypot.value = '';
+      honeypot.style.display = 'none';
+      hiddenForm.appendChild(honeypot);
+      
+      document.body.appendChild(hiddenForm);
+      hiddenForm.submit();
+      document.body.removeChild(hiddenForm);
+      
+      toast({
+        title: "Message sent!",
+        description: "Thank you for contacting us. We'll get back to you soon.",
+      });
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again or email us directly at thedramjournal@outlook.com",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-warmwhite">
+      <iframe
+        name="formsubmit_iframe"
+        style={{ display: 'none' }}
+        title="Form Submission"
+      />
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
