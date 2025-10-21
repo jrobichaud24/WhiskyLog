@@ -35,36 +35,32 @@ export default function Contact() {
 
   const onSubmit = async (data: ContactFormValues) => {
     try {
-      const hiddenForm = document.createElement('form');
-      hiddenForm.action = 'https://formsubmit.io/send/thedramjournal@outlook.com';
-      hiddenForm.method = 'POST';
-      hiddenForm.target = 'formsubmit_iframe';
-      hiddenForm.style.display = 'none';
-      
-      Object.entries(data).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        hiddenForm.appendChild(input);
+      const response = await fetch('https://formsubmit.co/ajax/thedramjournal@outlook.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message,
+          _captcha: false
+        })
       });
       
-      const honeypot = document.createElement('input');
-      honeypot.type = 'text';
-      honeypot.name = '_formsubmit_id';
-      honeypot.value = '';
-      honeypot.style.display = 'none';
-      hiddenForm.appendChild(honeypot);
+      const result = await response.json();
       
-      document.body.appendChild(hiddenForm);
-      hiddenForm.submit();
-      document.body.removeChild(hiddenForm);
-      
-      toast({
-        title: "Message sent!",
-        description: "Thank you for contacting us. We'll get back to you soon.",
-      });
-      form.reset();
+      if (result.success === "true" || response.ok) {
+        toast({
+          title: "Message sent!",
+          description: "Thank you for contacting us. We'll get back to you soon.",
+        });
+        form.reset();
+      } else {
+        throw new Error('Failed to send message');
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -76,11 +72,6 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-warmwhite">
-      <iframe
-        name="formsubmit_iframe"
-        style={{ display: 'none' }}
-        title="Form Submission"
-      />
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
