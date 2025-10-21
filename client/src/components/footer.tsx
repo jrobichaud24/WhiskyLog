@@ -1,4 +1,5 @@
 import { Twitter, Instagram, Facebook } from "lucide-react";
+import { Link } from "wouter";
 
 const footerSections = [
   {
@@ -23,7 +24,7 @@ const footerSections = [
     title: "Support",
     links: [
       { name: "Help Center", href: "#" },
-      { name: "Contact Us", href: "#" },
+      { name: "Contact Us", href: "/contact" },
       { name: "Privacy Policy", href: "#" },
       { name: "Terms of Service", href: "#" },
     ],
@@ -61,13 +62,24 @@ export default function Footer() {
               <ul className="space-y-2 text-gray-400">
                 {section.links.map((link, linkIndex) => (
                   <li key={link.name}>
-                    <a 
-                      href={link.href} 
-                      className="hover:text-amber-400 transition-colors"
-                      data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
-                    >
-                      {link.name}
-                    </a>
+                    {link.href.startsWith('/') ? (
+                      <Link 
+                        href={link.href}
+                        data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
+                      >
+                        <span className="hover:text-amber-400 transition-colors cursor-pointer">
+                          {link.name}
+                        </span>
+                      </Link>
+                    ) : (
+                      <a 
+                        href={link.href} 
+                        className="hover:text-amber-400 transition-colors"
+                        data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
+                      >
+                        {link.name}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

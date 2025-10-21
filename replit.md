@@ -54,6 +54,7 @@ Preferred communication style: Simple, everyday language.
 - **Progressive Web App (PWA)**: Full offline capabilities, installable as a native app on devices.
 - **Persistent Login Sessions**: Enhanced user experience with "Keep me signed in" option.
 - **App Reviews System**: Star ratings and comments with authentication.
+- **Contact Form**: Dedicated contact page with form validation for user inquiries and feedback.
 - **Scottish Region Imagery**: Authentic landscape images for 6 whisky regions.
 - **User Collection Page**: Dedicated page to display and manage user's owned whiskies with remove functionality.
 - **Database Cleanup (Oct 2025)**: Removed deprecated `whiskies` and `user_whiskies` tables, migrated fully to `products` and `user_products` schema.
