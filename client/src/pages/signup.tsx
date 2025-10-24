@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { insertUserSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
+import PrivacyPolicyDialog from "@/components/privacy-policy-dialog";
 import { ChevronDown } from "lucide-react";
 import { z } from "zod";
 
@@ -204,15 +205,17 @@ export default function Signup() {
                     </p>
                     <p>
                       By signing up, you agree to our{" "}
-                      <a 
-                        href="/privacy-policy" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-amber-600 hover:text-amber-700 underline font-medium"
-                        data-testid="link-privacy-policy"
-                      >
-                        Privacy Policy
-                      </a>{" "}
+                      <PrivacyPolicyDialog
+                        trigger={
+                          <button 
+                            type="button"
+                            className="text-amber-600 hover:text-amber-700 underline font-medium"
+                            data-testid="link-privacy-policy"
+                          >
+                            Privacy Policy
+                          </button>
+                        }
+                      />{" "}
                       and{" "}
                       <a 
                         href="/terms-of-service" 
@@ -256,15 +259,17 @@ export default function Signup() {
                         className="text-sm text-gray-700 cursor-pointer leading-relaxed"
                       >
                         I have read and agree to the{" "}
-                        <a 
-                          href="/privacy-policy" 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-amber-600 hover:text-amber-700 underline font-medium"
-                          data-testid="link-consent-privacy"
-                        >
-                          Privacy Policy
-                        </a>{" "}
+                        <PrivacyPolicyDialog
+                          trigger={
+                            <button 
+                              type="button"
+                              className="text-amber-600 hover:text-amber-700 underline font-medium"
+                              data-testid="link-consent-privacy"
+                            >
+                              Privacy Policy
+                            </button>
+                          }
+                        />{" "}
                         and{" "}
                         <a 
                           href="/terms-of-service" 

@@ -1,0 +1,50 @@
+Privacy Policy
+
+Effective Date: October 2025
+
+Last Updated: October 2025
+
+1. Introduction
+
+Welcome to The Dram Journal (“we,” “our,” or “us”). This Privacy Policy explains how we collect, use, and protect your personal information when you use our  app (the “App”). The App allows users to explore information about whisky, record whiskies they have tried, rate them, and add tasting notes.By using the App, you agree to the terms of this Privacy Policy. If you do not agree, please do not use the App.
+
+2. Information We Collect
+
+When you create an account and use the App, we collect the following information:Account Information:• First name and last name• Email address• Username• Password (securely hashed and never stored in plain text)User-Generated Content:• Whisky ratings and tasting notes• Personal whisky collection or favorites listAutomatic Data (optional):We may collect limited technical information (such as browser type, device type, and operating system) to improve performance and troubleshoot technical issues. This data does not include personally identifiable information.
+
+3. How We Use Your Information
+
+We use your information to:• Create and manage your user account• Allow you to save, rate, and review whiskies• Display your tasting notes and ratings within your account• Improve and personalize the App experience• Communicate with you about updates, features, or issues related to your account• Maintain the security and integrity of our serviceWe do not sell, rent, or share your personal data with third parties for marketing purposes.
+
+4. Legal Basis for Processing (GDPR Compliance)
+
+If you are located in the European Union (EU), the European Economic Area (EEA), or the United Kingdom (UK), we process your personal data on the following legal bases:• Your consent (Article 6(1)(a) GDPR)• Performance of a contract (Article 6(1)(b) GDPR)• Compliance with legal obligations (Article 6(1)(c) GDPR)• Our legitimate interests, such as improving and maintaining our services (Article 6(1)(f) GDPR)
+
+5. Data Storage, Transfers, and Security
+
+We use reasonable technical and organizational measures to protect your personal data against unauthorized access, loss, or misuse. Passwords are stored using industry-standard encryption methods.If you are located outside the country where our servers are located, your data may be transferred and processed in another country. Where required, we implement safeguards such as Standard Contractual Clauses (SCCs) approved by the European Commission or equivalent mechanisms for Canada and the United States.Please remember that no system is completely secure. You are responsible for keeping your login credentials confidential.
+
+6. Data Retention
+
+We retain your account information and whisky records for as long as your account remains active. If you delete your account, your personal data and associated tasting notes will be permanently deleted from our systems within a reasonable timeframe.
+
+7. Your Rights
+
+Depending on your location, you have specific rights under applicable privacy laws.Under GDPR (EU/EEA/UK):• Right to access, correct, or delete your personal data• Right to data portability• Right to restrict or object to processing• Right to withdraw consent at any timeUnder Canada’s PIPEDA:• Right to access and correct personal information• Right to challenge the accuracy of your information• Right to withdraw consent for data useUnder U.S. (where applicable state laws apply):• Right to know what information is collected• Right to request deletion of your data• Right to opt out of data sharing (if applicable)To exercise these rights, please contact us at thedramjournal@outlook.com.
+
+8. Cookies and Local Storage
+
+The App may use browser-based storage (such as cookies or local storage) to maintain your login session and store preferences. These are used only to improve functionality and are not shared with third parties.
+
+9. Children’s Privacy
+
+This App is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from minors. If we become aware that we have inadvertently collected such information, we will delete it promptly.
+
+10. Changes to This Policy
+
+We may update this Privacy Policy from time to time. Any changes will be posted in the App with an updated effective date. Continued use of the App after such updates constitutes your acceptance of the revised policy.
+
+11. Contact Us
+
+If you have any questions or concerns about this Privacy Policy or how we handle your data, please contact us at:📧 thedramjournal@outlook.com
+

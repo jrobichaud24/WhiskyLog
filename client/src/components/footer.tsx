@@ -1,5 +1,6 @@
 import { Twitter, Instagram, Facebook } from "lucide-react";
 import { Link } from "wouter";
+import PrivacyPolicyDialog from "./privacy-policy-dialog";
 
 const footerSections = [
   {
@@ -62,7 +63,18 @@ export default function Footer() {
               <ul className="space-y-2 text-gray-400">
                 {section.links.map((link, linkIndex) => (
                   <li key={link.name}>
-                    {link.href.startsWith('/') ? (
+                    {link.name === "Privacy Policy" ? (
+                      <PrivacyPolicyDialog
+                        trigger={
+                          <button 
+                            className="hover:text-amber-400 transition-colors text-left"
+                            data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
+                          >
+                            {link.name}
+                          </button>
+                        }
+                      />
+                    ) : link.href.startsWith('/') ? (
                       <Link 
                         href={link.href}
                         data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
