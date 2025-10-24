@@ -270,12 +270,6 @@ export default function Collection() {
                             {product.volumeCl}cl
                           </div>
                         )}
-                        {product?.price && (
-                          <div className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                            <DollarSign className="h-3 w-3" />
-                            £{product.price}
-                          </div>
-                        )}
                         {product?.productUrl && (
                           <a 
                             href={product.productUrl} 
