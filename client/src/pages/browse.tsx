@@ -48,8 +48,6 @@ export default function Browse() {
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistillery, setSelectedDistillery] = useState("all");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
   const [minABV, setMinABV] = useState("");
   const [maxABV, setMaxABV] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("all");
@@ -100,14 +98,6 @@ export default function Browse() {
       return false;
     }
 
-    // Price filters
-    if (minPrice && product.price && parseFloat(product.price) < parseFloat(minPrice)) {
-      return false;
-    }
-    if (maxPrice && product.price && parseFloat(product.price) > parseFloat(maxPrice)) {
-      return false;
-    }
-
     // ABV filters
     if (minABV && product.abvPercent && parseFloat(product.abvPercent) < parseFloat(minABV)) {
       return false;
@@ -131,14 +121,12 @@ export default function Browse() {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedDistillery("all");
-    setMinPrice("");
-    setMaxPrice("");
     setMinABV("");
     setMaxABV("");
     setSelectedRegion("all");
   };
 
-  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minPrice || maxPrice || minABV || maxABV || (selectedRegion !== "all");
+  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minABV || maxABV || (selectedRegion !== "all");
 
   // Add to collection mutation
   const addToCollectionMutation = useMutation({
@@ -464,29 +452,6 @@ export default function Browse() {
                 </Select>
               </div>
 
-              {/* Price Range */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Price Range (£)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    className="bg-white border-gray-200 focus:border-amber-500"
-                    data-testid="input-min-price"
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    className="bg-white border-gray-200 focus:border-amber-500"
-                    data-testid="input-max-price"
-                  />
-                </div>
-              </div>
-
               {/* ABV Range */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">ABV Range (%)</label>
@@ -613,12 +578,6 @@ export default function Browse() {
                         {product.filtration && (
                           <div className="text-sm text-slate-600">
                             <span className="font-medium">Filtration:</span> {product.filtration}
-                          </div>
-                        )}
-                        {product.price && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                            <span className="font-medium">£{product.price}</span>
                           </div>
                         )}
                       </div>
