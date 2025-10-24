@@ -1,6 +1,7 @@
 import { Twitter, Instagram, Facebook } from "lucide-react";
 import { Link } from "wouter";
 import PrivacyPolicyDialog from "./privacy-policy-dialog";
+import TermsOfServiceDialog from "./terms-of-service-dialog";
 
 const footerSections = [
   {
@@ -65,6 +66,17 @@ export default function Footer() {
                   <li key={link.name}>
                     {link.name === "Privacy Policy" ? (
                       <PrivacyPolicyDialog
+                        trigger={
+                          <button 
+                            className="hover:text-amber-400 transition-colors text-left"
+                            data-testid={`footer-link-${sectionIndex}-${linkIndex}`}
+                          >
+                            {link.name}
+                          </button>
+                        }
+                      />
+                    ) : link.name === "Terms of Service" ? (
+                      <TermsOfServiceDialog
                         trigger={
                           <button 
                             className="hover:text-amber-400 transition-colors text-left"

@@ -14,6 +14,7 @@ import { insertUserSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
 import PrivacyPolicyDialog from "@/components/privacy-policy-dialog";
+import TermsOfServiceDialog from "@/components/terms-of-service-dialog";
 import { ChevronDown } from "lucide-react";
 import { z } from "zod";
 
@@ -217,15 +218,17 @@ export default function Signup() {
                         }
                       />{" "}
                       and{" "}
-                      <a 
-                        href="/terms-of-service" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-amber-600 hover:text-amber-700 underline font-medium"
-                        data-testid="link-terms-of-service"
-                      >
-                        Terms of Service
-                      </a>
+                      <TermsOfServiceDialog
+                        trigger={
+                          <button 
+                            type="button"
+                            className="text-amber-600 hover:text-amber-700 underline font-medium"
+                            data-testid="link-terms-of-service"
+                          >
+                            Terms of Service
+                          </button>
+                        }
+                      />
                       , which explain your rights under U.S., Canadian (PIPEDA), and EU/UK (GDPR) laws.
                     </p>
                   </div>
@@ -271,15 +274,17 @@ export default function Signup() {
                           }
                         />{" "}
                         and{" "}
-                        <a 
-                          href="/terms-of-service" 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-amber-600 hover:text-amber-700 underline font-medium"
-                          data-testid="link-consent-terms"
-                        >
-                          Terms of Service
-                        </a>
+                        <TermsOfServiceDialog
+                          trigger={
+                            <button 
+                              type="button"
+                              className="text-amber-600 hover:text-amber-700 underline font-medium"
+                              data-testid="link-consent-terms"
+                            >
+                              Terms of Service
+                            </button>
+                          }
+                        />
                         .
                       </Label>
                       {errors.consent && (
