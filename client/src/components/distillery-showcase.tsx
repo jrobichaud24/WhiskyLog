@@ -1,22 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import type { Distillery } from "@shared/schema";
-import highlandImage from "@assets/highlands_1755825461469.webp";
-import speysideImage from "@assets/speyside_1755825514874.webp";
-import islayImage from "@assets/islay_1755825546575.webp";
-import lowlandImage from "@assets/lowlands_1755825572942.webp";
-import islandImage from "@assets/islands_1755825588916.webp";
-import campbeltownImage from "@assets/campbeltown_1755825615246.webp";
-
-const regionDisplayOrder = [
-  "Highland",
-  "Speyside", 
-  "Islay",
-  "Lowland",
-  "Island",
-  "Campbeltown",
-];
+import { regionGalleryData } from "@/data/region-gallery";
 
 export default function DistilleryShowcase() {
   const { data: distilleries = [], isLoading } = useQuery<Distillery[]>({
@@ -32,15 +17,13 @@ export default function DistilleryShowcase() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Create display regions with actual counts
-  const displayRegions = regionDisplayOrder.map(region => {
-    const count = regionCounts[region] || 0;
-    const displayName = region === "Highland" ? "Highland Region" : region;
+  // Enrich gallery data with actual distillery counts from database
+  const displayRegions = regionGalleryData.map(galleryItem => {
+    const count = regionCounts[galleryItem.region] || 0;
     return {
-      name: displayName,
+      ...galleryItem,
+      count,
       distilleries: count === 1 ? "1 Distillery" : `${count} Distilleries`,
-      count: count,
-      region: region
     };
   });
 
@@ -78,64 +61,28 @@ export default function DistilleryShowcase() {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           {displayRegions.map((region, index) => (
-            <Card 
-              key={region.name} 
-              className="relative overflow-hidden group cursor-pointer bg-transparent border-none"
+            <figure 
+              key={region.region} 
+              className="relative overflow-hidden group cursor-pointer m-0"
               data-testid={`card-region-${index}`}
             >
-              <CardContent className="p-0">
-                <div className="relative h-64 rounded-2xl overflow-hidden">
-                  {region.region === "Highland" ? (
-                    <img 
-                      src={highlandImage} 
-                      alt="Highland Region landscape" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : region.region === "Speyside" ? (
-                    <img 
-                      src={speysideImage} 
-                      alt="Speyside Region castle and landscape" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : region.region === "Islay" ? (
-                    <img 
-                      src={islayImage} 
-                      alt="Islay coastal cliffs and ocean" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : region.region === "Lowland" ? (
-                    <img 
-                      src={lowlandImage} 
-                      alt="Lowland rolling hills and river" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : region.region === "Island" ? (
-                    <img 
-                      src={islandImage} 
-                      alt="Island mountains and coastal waters" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : region.region === "Campbeltown" ? (
-                    <img 
-                      src={campbeltownImage} 
-                      alt="Campbeltown lighthouse and coastal cliffs" 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-t from-gray-700 to-gray-500 group-hover:scale-110 transition-transform duration-500"></div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4">
-                    <h3 className="font-playfair text-lg font-semibold text-white" data-testid={`text-region-name-${index}`}>
-                      {region.name}
-                    </h3>
-                    <p className="text-gray-300 text-sm" data-testid={`text-region-count-${index}`}>
-                      {region.distilleries}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="relative h-64 rounded-2xl overflow-hidden">
+                <img 
+                  src={region.image} 
+                  alt={region.alt}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <figcaption className="absolute bottom-4 left-4">
+                  <h3 className="font-playfair text-lg font-semibold text-white" data-testid={`text-region-name-${index}`}>
+                    {region.displayName}
+                  </h3>
+                  <p className="text-gray-300 text-sm" data-testid={`text-region-count-${index}`}>
+                    {region.distilleries}
+                  </p>
+                </figcaption>
+              </div>
+            </figure>
           ))}
         </div>
       </div>
