@@ -50,6 +50,16 @@ Preferred communication style: Simple, everyday language.
 - Bulk import endpoints for distilleries and products via CSV/JSON.
 - TheWhiskyEdition API integration for automated whisky database imports.
 
+## PWA Implementation
+- **Service Worker Registration**: Comprehensive lifecycle logging with emoji-prefixed console messages for easy debugging and monitoring.
+  - Async registration helper with detailed state tracking (installing, waiting, active)
+  - Automatic update detection with hourly polling
+  - Graceful degradation when service workers unavailable
+  - Exported helper functions (getServiceWorkerRegistration, waitForServiceWorker, unregisterServiceWorker)
+  - Detailed error handling with specific error type detection and debugging suggestions
+- **Offline Support**: Full offline functionality with service worker caching and local storage fallbacks.
+- **Installability**: Web app manifest enables installation as native app on mobile and desktop devices.
+
 ## Key Features
 - **Progressive Web App (PWA)**: Full offline capabilities, installable as a native app on devices.
 - **Persistent Login Sessions**: Enhanced user experience with "Keep me signed in" option.
