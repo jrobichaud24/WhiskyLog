@@ -13,7 +13,6 @@ export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDistillery, setSelectedDistillery] = useState<string>("all");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [priceFilter, setPriceFilter] = useState<string>("all");
   const [abvFilter, setAbvFilter] = useState<string>("all");
 
   // Fetch products and distilleries
@@ -52,18 +51,6 @@ export default function Discover() {
       const distillery = getDistillery(product.distillery);
       return distillery?.region === selectedRegion;
     })();
-    
-    const matchesPrice = priceFilter === "all" || (() => {
-      if (!product.price) return priceFilter === "unknown";
-      const price = parseFloat(product.price);
-      switch (priceFilter) {
-        case "under-50": return price < 50;
-        case "50-100": return price >= 50 && price <= 100;
-        case "100-200": return price > 100 && price <= 200;
-        case "over-200": return price > 200;
-        default: return true;
-      }
-    })();
 
     const matchesAbv = abvFilter === "all" || (() => {
       if (!product.abvPercent) return abvFilter === "unknown";
@@ -77,7 +64,7 @@ export default function Discover() {
       }
     })();
 
-    return matchesSearch && matchesDistillery && matchesRegion && matchesPrice && matchesAbv;
+    return matchesSearch && matchesDistillery && matchesRegion && matchesAbv;
   });
 
   // Group filtered products by distillery
@@ -97,7 +84,6 @@ export default function Discover() {
     setSearchQuery("");
     setSelectedDistillery("all");
     setSelectedRegion("all");
-    setPriceFilter("all");
     setAbvFilter("all");
   };
 
@@ -123,7 +109,7 @@ export default function Discover() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div className="lg:col-span-2 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -166,21 +152,6 @@ export default function Discover() {
               </SelectContent>
             </Select>
 
-            {/* Price Filter */}
-            <Select value={priceFilter} onValueChange={setPriceFilter}>
-              <SelectTrigger data-testid="select-price-filter">
-                <SelectValue placeholder="All Prices" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="under-50">Under £50</SelectItem>
-                <SelectItem value="50-100">£50 - £100</SelectItem>
-                <SelectItem value="100-200">£100 - £200</SelectItem>
-                <SelectItem value="over-200">Over £200</SelectItem>
-                <SelectItem value="unknown">Price Unknown</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* ABV Filter */}
             <Select value={abvFilter} onValueChange={setAbvFilter}>
               <SelectTrigger data-testid="select-abv-filter">
@@ -202,7 +173,7 @@ export default function Discover() {
             <div className="text-sm text-slate-600">
               Showing {filteredProducts.length} of {products.length} whiskies
             </div>
-            {(searchQuery || selectedDistillery !== "all" || selectedRegion !== "all" || priceFilter !== "all" || abvFilter !== "all") && (
+            {(searchQuery || selectedDistillery !== "all" || selectedRegion !== "all" || abvFilter !== "all") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -308,8 +279,8 @@ export default function Discover() {
                             </p>
                           )}
 
-                          <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                            {product.productUrl ? (
+                          {product.productUrl && (
+                            <div className="pt-2 border-t border-slate-100">
                               <a 
                                 href={product.productUrl} 
                                 target="_blank" 
@@ -319,15 +290,8 @@ export default function Discover() {
                                 <Globe className="h-4 w-4" />
                                 <span>View Product</span>
                               </a>
-                            ) : (
-                              <div></div>
-                            )}
-                            {product.price && (
-                              <span className="font-bold text-lg text-green-600">
-                                £{product.price}
-                              </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
