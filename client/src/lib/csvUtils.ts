@@ -1,22 +1,25 @@
 export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'products'): any[] {
   console.log('Converting CSV with', csvText.split('\n').length, 'lines');
   const lines = csvText.trim().split('\n');
-  
+
   if (lines.length < 2) {
     throw new Error('CSV must have at least a header row and one data row');
   }
 
-  const headers = parseCSVLine(lines[0]).map(h => h.trim());
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  console.log(`Detected delimiter: ${delimiter === '\t' ? 'TAB' : 'COMMA'}`);
+
+  const headers = parseCSVLine(lines[0], delimiter).map(h => h.trim());
   console.log('CSV headers detected:', headers.length, 'columns');
   const data = [];
 
   for (let i = 1; i < lines.length; i++) {
-    let values = parseCSVLine(lines[i]);
-    
+    let values = parseCSVLine(lines[i], delimiter);
+
     while (values.length < headers.length) {
       values.push('');
     }
-    
+
     if (values.length > headers.length) {
       console.warn(`Row ${i + 1}: has ${values.length} columns, expected ${headers.length}, truncating`);
       values = values.slice(0, headers.length);
@@ -25,12 +28,15 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
     const row: any = {};
     headers.forEach((header, index) => {
       const value = values[index] ? values[index].trim() : '';
-      
+
       let fieldName = header;
       if (type === 'products') {
         const fieldMappings: Record<string, string> = {
           'distillery_id': 'distillery',
           'distilleryId': 'distillery',
+          'distillery_name': 'distillery',
+          'distilleryName': 'distillery',
+          'distillery': 'distillery',
           'abv_percent': 'abvPercent',
           'abvPercent': 'abvPercent',
           'abv': 'abvPercent',
@@ -50,6 +56,8 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
           'product_url': 'productUrl',
           'productUrl': 'productUrl',
           'url': 'productUrl',
+          'filtration': 'filtration',
+          'appearance': 'appearance',
           'product_image': 'productImage',
           'productImage': 'productImage',
           'image': 'productImage',
@@ -57,7 +65,7 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
         };
         fieldName = fieldMappings[header] || header;
       }
-      
+
       if (type === 'distilleries') {
         if (header === 'founded' && value) {
           row[header] = parseInt(value) || null;
@@ -85,9 +93,9 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
             .trim();
           row[fieldName] = cleanPrice || null;
         } else if (fieldName === 'abvPercent' && value) {
-          row[fieldName] = value;
+          row[fieldName] = parseFloat(value) || null;
         } else if (fieldName === 'volumeCl' && value) {
-          row[fieldName] = value;
+          row[fieldName] = parseFloat(value) || null;
         } else {
           row[fieldName] = value || null;
         }
@@ -105,15 +113,15 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
   return data;
 }
 
-export function parseCSVLine(line: string): string[] {
+export function parseCSVLine(line: string, delimiter = ','): string[] {
   const result = [];
   let current = '';
   let inQuotes = false;
   let i = 0;
-  
+
   while (i < line.length) {
     const char = line[i];
-    
+
     if (char === '"') {
       if (inQuotes && line[i + 1] === '"') {
         current += '"';
@@ -121,7 +129,7 @@ export function parseCSVLine(line: string): string[] {
         continue;
       }
       inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       result.push(current.trim());
       current = '';
       i++;
@@ -131,7 +139,7 @@ export function parseCSVLine(line: string): string[] {
     }
     i++;
   }
-  
+
   result.push(current.trim());
   return result.map(field => {
     if (field.startsWith('"') && field.endsWith('"')) {
