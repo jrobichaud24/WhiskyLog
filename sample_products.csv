@@ -1,6 +1,0 @@
-name,distilleryId,age,abv,caskType,price,description,availability
-Glenlivet 12 Year Old,REPLACE_WITH_GLENLIVET_ID,12,40.0,American Oak,35.99,"The original Speyside single malt with a smooth and balanced flavor profile.",available
-Laphroaig 10 Year Old,REPLACE_WITH_LAPHROAIG_ID,10,40.0,Bourbon,42.99,"Bold and peaty with medicinal notes and a long smoky finish.",available
-Springbank 15 Year Old,REPLACE_WITH_SPRINGBANK_ID,15,46.0,Sherry,89.99,"Complex and well-balanced with rich fruit and spice notes.",limited
-Dalmore 18 Year Old,REPLACE_WITH_DALMORE_ID,18,43.0,Matusalem Oloroso,299.99,"Luxurious and rich with notes of chocolate, orange, and spices.",available
-Bruichladdich Port Charlotte 10,REPLACE_WITH_BRUICHLADDICH_ID,10,50.0,American Oak,59.99,"Heavily peated and complex with maritime influences.",available
