@@ -1,9 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
-  insertWhiskySchema, 
-  insertUserWhiskySchema, 
+import {
   insertUserSchema,
   insertDistillerySchema,
   insertProductSchema,
@@ -48,28 +46,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
-      
+
       // Check if username or email already exists
       const existingUsername = await storage.getUserByUsername(validatedData.username);
       if (existingUsername) {
         return res.status(400).json({ message: "Username already exists" });
       }
-      
+
       const existingEmail = await storage.getUserByEmail(validatedData.email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already exists" });
       }
-      
+
       // Create user
       const user = await storage.createUser(validatedData);
-      
+
       // Set session
       req.session.userId = user.id;
-      
+
       // Return user without password
       const { password, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
-      
+
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid user data", errors: error.errors });
@@ -82,41 +80,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password, rememberMe } = req.body;
-      
+
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
       }
-      
+
       // Find user by username or email
       let user = await storage.getUserByUsername(username);
       if (!user) {
         user = await storage.getUserByEmail(username);
       }
-      
+
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       // Set session with appropriate expiration
       req.session.userId = user.id;
-      
+
       // Configure session duration based on "Remember Me"
       if (rememberMe) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
       } else {
         req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
       }
-      
+
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
-      
+
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });
@@ -136,13 +134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
-      
+
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
@@ -155,13 +153,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
-      
+
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
@@ -173,24 +171,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", async (req, res) => {
     try {
       const { email, newPassword } = req.body;
-      
+
       if (!email || !newPassword) {
         return res.status(400).json({ message: "Email and new password are required" });
       }
-      
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
         // Don't reveal if email exists for security
         return res.json({ message: "If an account with that email exists, a password reset has been processed" });
       }
-      
+
       const success = await storage.updateUserPassword(user.id, newPassword);
       if (success) {
         res.json({ message: "Password reset successfully" });
       } else {
         res.status(500).json({ message: "Failed to reset password" });
       }
-      
+
     } catch (error) {
       console.error("Password reset error:", error);
       res.status(500).json({ message: "Failed to reset password" });
@@ -239,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/distilleries/bulk", async (req, res) => {
     try {
       console.log("Bulk import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
-      
+
       if (!Array.isArray(req.body)) {
         return res.status(400).json({ message: "Expected an array of distilleries" });
       }
@@ -250,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = bulkDistillerySchema.parse(req.body);
       console.log("Validated data:", JSON.stringify(validatedData, null, 2));
-      
+
       const distilleries = await storage.bulkCreateDistilleries(validatedData);
       res.status(201).json({
         message: `Successfully imported ${distilleries.length} distilleries`,
@@ -259,9 +257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error("Validation errors:", error.errors);
-        return res.status(400).json({ 
-          message: "Invalid distillery data", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Invalid distillery data",
+          errors: error.errors
         });
       }
       console.error("Bulk create distilleries error:", error);
@@ -344,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log("Bulk product import request received with", Array.isArray(req.body) ? req.body.length : 'invalid', "items");
-      
+
       if (!Array.isArray(req.body)) {
         return res.status(400).json({ message: "Expected an array of products" });
       }
@@ -353,42 +351,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot import empty array" });
       }
 
-      // Debug: Check what's in the first item before processing
-      console.log("First product item (raw):", JSON.stringify(req.body[0], null, 2));
-      console.log("productImage field:", req.body[0]?.productImage);
-      console.log("product_image field:", req.body[0]?.product_image);
-      
-      // Add createdByUserId to each product and clean price data
-      const productsWithCreator = req.body.map(product => ({
-        ...product,
-        createdByUserId: req.session.userId,
-        // Clean price by removing currency symbols and codes
-        price: product.price ? 
-          String(product.price)
-            .replace(/^[A-Z]{3}\s*/, '') // Remove currency codes like GBP, USD
-            .replace(/^[£$€¥₹¢₽₩₨₪₡₦₴₸₼₻₺₾₺₵₶₷₸₹₺₻₼₽₾₿]/g, '') // Remove currency symbols
-            .replace(/[,\s]/g, '') // Remove commas and whitespace
-            .trim() || null
-          : product.price,
-        // Convert product_image to productImage if needed (backend safety net)
-        productImage: product.productImage || product.product_image || null
-      }));
-      
-      console.log("First product after processing:", JSON.stringify(productsWithCreator[0], null, 2));
-      
-      const validatedData = bulkProductSchema.parse(productsWithCreator);
-      
+      const processedProducts = [];
+      const newDistilleries = [];
+
+      // Process each product sequentially to handle distillery creation
+      for (const product of req.body) {
+        let distilleryId = product.distillery;
+
+        // If distillery is provided as a name (not a UUID), resolve it
+        if (distilleryId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(distilleryId)) {
+          const distilleryName = distilleryId.trim();
+
+          // Check if distillery exists
+          let distillery = await storage.getDistilleryByName(distilleryName);
+
+          if (!distillery) {
+            console.log(`Creating new distillery: ${distilleryName}`);
+            distillery = await storage.createDistillery({
+              name: distilleryName,
+              region: "Unknown", // Default region
+              country: "Scotland", // Default country
+              description: `Distillery for ${distilleryName}`,
+            });
+            newDistilleries.push(distillery.name);
+          }
+
+          distilleryId = distillery.id;
+        }
+
+        processedProducts.push({
+          ...product,
+          distillery: distilleryId,
+          createdByUserId: req.session.userId,
+          // Clean price by removing currency symbols and codes
+          price: product.price ?
+            String(product.price)
+              .replace(/^[A-Z]{3}\s*/, '') // Remove currency codes like GBP, USD
+              .replace(/^[£$€¥₹¢₽₩₨₪₡₦₴₸₼₻₺₾₺₵₶₷₸₹₺₻₼₽₾₿]/g, '') // Remove currency symbols
+              .replace(/[,\s]/g, '') // Remove commas and whitespace
+              .trim() || null
+            : product.price,
+          // Ensure productImage is correctly mapped
+          productImage: product.productImage || product.product_image || null
+        });
+      }
+
+      const validatedData = bulkProductSchema.parse(processedProducts);
+
       const products = await storage.bulkCreateProducts(validatedData);
+
       res.status(201).json({
-        message: `Successfully imported ${products.length} products`,
-        products
+        message: `Successfully imported ${products.length} products. Created ${newDistilleries.length} new distilleries.`,
+        products,
+        newDistilleries
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error("Product validation errors:", error.errors);
-        return res.status(400).json({ 
-          message: "Invalid product data", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Invalid product data",
+          errors: error.errors
         });
       }
       console.error("Bulk create products error:", error);
@@ -418,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const existingUserProduct = await storage.getUserProduct(req.session.userId, req.params.productId);
-      res.json({ 
+      res.json({
         inCollection: !!existingUserProduct,
         isOwned: existingUserProduct?.owned || false,
         isWishlisted: existingUserProduct?.wishlist || false
@@ -466,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all user products and verify the product belongs to the current user
       const userProducts = await storage.getUserProducts(req.session.userId);
       const productToDelete = userProducts.find(up => up.id === req.params.id);
-      
+
       if (!productToDelete) {
         return res.status(404).json({ message: "Product not found in your collection" });
       }
@@ -480,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(500).json({ message: "Failed to delete product from database" });
       }
-      
+
       res.json({ message: "Product removed successfully" });
     } catch (error) {
       console.error("Delete user product error:", error);
@@ -585,12 +607,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Authentication required" });
     }
-    
+
     const user = await storage.getUser(req.session.userId);
     if (!user || !user.isAdmin) {
       return res.status(403).json({ message: "Admin access required" });
     }
-    
+
     next();
   };
 
@@ -598,28 +620,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/create-first-admin", async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
-      
+
       // Check if any admin users already exist
       const allUsers = await storage.getUsers();
       const hasAdmin = allUsers.some(user => user.isAdmin);
-      
+
       if (hasAdmin) {
         return res.status(403).json({ message: "Admin user already exists" });
       }
-      
+
       // Create user with admin privileges
       const adminUser = await storage.createUser({
         ...validatedData,
         isAdmin: true
       });
-      
+
       // Set session
       req.session.userId = adminUser.id;
-      
+
       // Return user without password
       const { password, ...userWithoutPassword } = adminUser;
       res.status(201).json(userWithoutPassword);
-      
+
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid user data", errors: error.errors });
@@ -646,16 +668,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { isAdmin } = req.body;
       const { userId } = req.params;
-      
+
       if (typeof isAdmin !== 'boolean') {
         return res.status(400).json({ message: "isAdmin must be a boolean" });
       }
-      
+
       const success = await storage.updateUserAdminStatus(userId, isAdmin);
       if (!success) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json({ message: `User admin status updated to ${isAdmin}` });
     } catch (error) {
       console.error("Update admin status error:", error);
@@ -666,17 +688,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/users/:userId", requireAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
-      
+
       // Prevent self-deletion
       if (req.session.userId === userId) {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
-      
+
       const success = await storage.deleteUser(userId);
       if (!success) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error("Delete user error:", error);
@@ -687,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import whiskies from TheWhiskyEdition API
   app.post("/api/admin/import-whiskies", requireAdmin, async (req, res) => {
     console.log("[Import] Starting TheWhiskyEdition API import");
-    
+
     try {
       const stats = {
         totalFetched: 0,
@@ -707,23 +729,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       while (hasMore && batchCount < MAX_BATCHES) {
         try {
           console.log(`[Import] Fetching batch ${batchCount + 1}, offset ${offset}`);
-          
+
           // Fetch whiskies from TheWhiskyEdition API with timeout
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout per request
-          
+
           const response = await fetch(`${API_BASE}/whisky/get?limit=${BATCH_SIZE}&offset=${offset}`, {
             signal: controller.signal
           });
           clearTimeout(timeoutId);
-          
+
           if (!response.ok) {
             throw new Error(`API request failed: ${response.statusText}`);
           }
 
           const whiskies = await response.json();
           console.log(`[Import] Received ${whiskies.length} whiskies`);
-          
+
           if (!Array.isArray(whiskies) || whiskies.length === 0) {
             hasMore = false;
             break;
@@ -781,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 productUrl: whisky.url || null,
                 createdByUserId: null, // Imported from external API
               });
-              
+
               stats.newProducts++;
             } catch (error) {
               console.error(`Error processing whisky ${whisky.name}:`, error);
@@ -810,7 +832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log("[Import] Import completed:", stats);
-      
+
       res.json({
         message: "Import completed",
         stats,
@@ -818,7 +840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("[Import] Import whiskies error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to import whiskies",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -833,7 +855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { image } = req.body;
-      
+
       if (!image) {
         return res.status(400).json({ message: "Image data is required" });
       }
@@ -898,28 +920,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Search for existing product in database
       const products = await storage.getProducts();
       const distilleries = await storage.getDistilleries();
-      
+
       const matchingProduct = products.find(product => {
         if (!whiskyData.name) return false;
-        
+
         // Simple matching logic - can be improved
         const nameMatch = product.name.toLowerCase().includes(whiskyData.name.toLowerCase()) ||
-                         whiskyData.name.toLowerCase().includes(product.name.toLowerCase());
-        
+          whiskyData.name.toLowerCase().includes(product.name.toLowerCase());
+
         if (whiskyData.distillery) {
           const distillery = distilleries.find(d => d.id === product.distillery);
           const distilleryMatch = distillery?.name.toLowerCase().includes(whiskyData.distillery.toLowerCase()) ||
-                                whiskyData.distillery.toLowerCase().includes(distillery?.name.toLowerCase() || "");
+            whiskyData.distillery.toLowerCase().includes(distillery?.name.toLowerCase() || "");
           return nameMatch && distilleryMatch;
         }
-        
+
         return nameMatch;
       });
 
       if (matchingProduct) {
         // Check if user already has this product
         const existingUserProduct = await storage.getUserProduct(req.session.userId, matchingProduct.id);
-        
+
         if (existingUserProduct) {
           return res.json({
             success: false,
@@ -959,7 +981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Image analysis error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to analyze image. Please try again with a clearer photo of the bottle label.",
         error: error instanceof Error ? error.message : "Unknown error"
       });
@@ -974,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { whiskyData } = req.body;
-      
+
       if (!whiskyData || !whiskyData.name) {
         return res.status(400).json({ message: "Whisky data with name is required" });
       }
@@ -984,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (whiskyData.distillery) {
         // Check if distillery exists
         const distilleries = await storage.getDistilleries();
-        distillery = distilleries.find(d => 
+        distillery = distilleries.find(d =>
           d.name.toLowerCase().includes(whiskyData.distillery.toLowerCase()) ||
           whiskyData.distillery.toLowerCase().includes(d.name.toLowerCase())
         );
@@ -998,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "active",
             description: `Added from bottle scan: ${whiskyData.distillery}`
           };
-          
+
           distillery = await storage.createDistillery(newDistilleryData);
         }
       }
@@ -1037,7 +1059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Create product from analysis error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to create product. Please try again.",
         error: error instanceof Error ? error.message : "Unknown error"
       });

@@ -11,10 +11,13 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
 
   const headers = parseCSVLine(lines[0], delimiter).map(h => h.trim());
   console.log('CSV headers detected:', headers.length, 'columns');
-  const data = [];
+  const data: any[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     let values = parseCSVLine(lines[i], delimiter);
+
+    // Skip empty lines
+    if (values.length === 1 && values[0] === '') continue;
 
     while (values.length < headers.length) {
       values.push('');
@@ -61,7 +64,8 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
           'product_image': 'productImage',
           'productImage': 'productImage',
           'image': 'productImage',
-          'image_url': 'productImage'
+          'image_url': 'productImage',
+          'description': 'description'
         };
         fieldName = fieldMappings[header] || header;
       }
@@ -93,18 +97,18 @@ export function convertCSVToJSON(csvText: string, type: 'distilleries' | 'produc
             .trim();
           row[fieldName] = cleanPrice || null;
         } else if (fieldName === 'abvPercent' && value) {
-          row[fieldName] = parseFloat(value) || null;
+          // Keep as string for decimal type
+          const val = value.replace(/[^\d.]/g, '');
+          row[fieldName] = val || null;
         } else if (fieldName === 'volumeCl' && value) {
-          row[fieldName] = parseFloat(value) || null;
+          // Keep as string for decimal type
+          const val = value.replace(/[^\d.]/g, '');
+          row[fieldName] = val || null;
         } else {
           row[fieldName] = value || null;
         }
       }
     });
-
-    if (i >= 70 && i <= 75) {
-      console.log(`Row ${i}: name="${row.name}", region="${row.region}", headers:`, headers);
-    }
 
     data.push(row);
   }
