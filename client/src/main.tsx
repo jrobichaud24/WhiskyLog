@@ -24,7 +24,7 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
 
   try {
     console.log('⏳ Registering service worker...');
-    
+
     // Register the service worker
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
@@ -35,18 +35,18 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
     // Log initial registration state
     console.log('✅ Service worker registered successfully');
     console.log('📍 Scope:', registration.scope);
-    
+
     // Log current worker states
     if (registration.installing) {
       console.log('🔄 Service worker installing...');
       logWorkerState(registration.installing, 'installing');
     }
-    
+
     if (registration.waiting) {
       console.log('⏸️  Service worker waiting to activate');
       logWorkerState(registration.waiting, 'waiting');
     }
-    
+
     if (registration.active) {
       console.log('✨ Service worker active and ready');
       logWorkerState(registration.active, 'active');
@@ -55,19 +55,19 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
     // Listen for updates
     registration.addEventListener('updatefound', () => {
       console.log('🔍 Update found! New service worker installing...');
-      
+
       const newWorker = registration.installing;
       if (newWorker) {
         logWorkerState(newWorker, 'new worker');
-        
+
         newWorker.addEventListener('statechange', () => {
           console.log(`🔄 New worker state changed to: ${newWorker.state}`);
-          
+
           if (newWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               // New content is available
               console.log('🆕 New content is available! Please refresh to update.');
-              
+
               // Optionally notify user (you can hook into a toast notification here)
               notifyUserOfUpdate();
             } else {
@@ -75,7 +75,7 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
               console.log('💾 Content cached for offline use');
             }
           }
-          
+
           if (newWorker.state === 'activated') {
             console.log('✅ New service worker activated');
           }
@@ -92,10 +92,10 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
     }, 60 * 60 * 1000); // 1 hour
 
     return registration;
-    
+
   } catch (error) {
     console.error('❌ Service worker registration failed');
-    
+
     // Log detailed error information
     if (error instanceof Error) {
       console.error('Error name:', error.name);
@@ -104,7 +104,7 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
     } else {
       console.error('Unknown error:', error);
     }
-    
+
     // Specific error handling
     if (error instanceof TypeError) {
       console.error('💡 Possible causes:');
@@ -112,7 +112,7 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
       console.error('  - Network connectivity issues');
       console.error('  - HTTPS requirement not met (required in production)');
     }
-    
+
     return null;
   }
 }
@@ -135,7 +135,7 @@ function notifyUserOfUpdate() {
   // You can integrate this with your toast notification system
   // For now, we'll just log to console
   console.log('💡 Tip: Refresh the page to get the latest version');
-  
+
   // Example: Show a toast notification
   // toast({
   //   title: "Update Available",
@@ -176,7 +176,27 @@ export async function unregisterServiceWorker(): Promise<boolean> {
 
 // Initialize service worker on page load
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  window.addEventListener('load', async () => {
+    // Check if we are on the www subdomain
+    if (window.location.hostname.startsWith('www.')) {
+      console.log('🌐 Detected www subdomain, checking for service workers to unregister...');
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        if (registrations.length > 0) {
+          console.log(`🗑️ Found ${registrations.length} service workers, unregistering...`);
+          await Promise.all(registrations.map(r => r.unregister()));
+          console.log('✅ All service workers unregistered. Reloading to force redirect...');
+          window.location.reload();
+        } else {
+          console.log('ℹ️ No service workers found on www.');
+        }
+      } catch (error) {
+        console.error('❌ Error checking/unregistering service workers:', error);
+      }
+      // Do not register new SW on www
+      return;
+    }
+
     console.log('🚀 Page loaded, initializing service worker...');
     registerServiceWorker().then(registration => {
       if (registration) {
