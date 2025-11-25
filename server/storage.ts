@@ -1,5 +1,5 @@
-import { 
-  type User, type InsertUser, 
+import {
+  type User, type InsertUser,
   type Distillery, type InsertDistillery,
   type Product, type InsertProduct,
   type UserProduct, type InsertUserProduct,
@@ -23,14 +23,14 @@ export interface IStorage {
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
   deleteUser(userId: string): Promise<boolean>;
-  
+
   // Distillery operations
   getDistilleries(): Promise<Distillery[]>;
   getDistillery(id: string): Promise<Distillery | undefined>;
   getDistilleryByName(name: string): Promise<Distillery | undefined>;
-  createDistillery(distillery: InsertDistillery): Promise<Distillery>;
+  createDistillery(distillery: InsertDistillery & { id?: string }): Promise<Distillery>;
   bulkCreateDistilleries(distilleries: InsertDistillery[]): Promise<Distillery[]>;
-  
+
   // Product operations
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
@@ -38,7 +38,7 @@ export interface IStorage {
   getProductByNameAndDistillery(name: string, distilleryId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   bulkCreateProducts(products: InsertProduct[]): Promise<Product[]>;
-  
+
   // User product operations
   getUserProducts(userId: string): Promise<UserProduct[]>;
   getUserProduct(userId: string, productId: string): Promise<UserProduct | undefined>;
@@ -55,7 +55,7 @@ export interface IStorage {
   getBadges(): Promise<Badge[]>;
   getBadge(id: string): Promise<Badge | undefined>;
   createBadge(badge: InsertBadge): Promise<Badge>;
-  
+
   // User badge operations
   getUserBadges(userId: string): Promise<UserBadge[]>;
   getUserBadge(userId: string, badgeId: string): Promise<UserBadge | undefined>;
@@ -79,7 +79,7 @@ export class DatabaseStorage implements IStorage {
     return distillery || undefined;
   }
 
-  async createDistillery(insertDistillery: InsertDistillery): Promise<Distillery> {
+  async createDistillery(insertDistillery: InsertDistillery & { id?: string }): Promise<Distillery> {
     const [distillery] = await db
       .insert(distilleries)
       .values(insertDistillery)
@@ -156,7 +156,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
-    
+
     const [user] = await db
       .insert(users)
       .values({
@@ -164,19 +164,19 @@ export class DatabaseStorage implements IStorage {
         password: hashedPassword,
       })
       .returning();
-    
+
     return user;
   }
 
   async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
+
     const result = await db
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -186,7 +186,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isAdmin })
       .where(eq(users.id, userId))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -195,7 +195,7 @@ export class DatabaseStorage implements IStorage {
       .delete(users)
       .where(eq(users.id, userId))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -258,7 +258,7 @@ export class DatabaseStorage implements IStorage {
       .from(appReviews)
       .leftJoin(users, eq(appReviews.userId, users.id))
       .orderBy(desc(appReviews.createdAt));
-    
+
     return reviews.map(review => ({
       ...review,
       user: review.user || undefined
@@ -370,13 +370,13 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
-      id, 
+    const user: User = {
+      ...insertUser,
+      id,
       firstName: insertUser.firstName ?? null,
       lastName: insertUser.lastName ?? null,
       isAdmin: insertUser.isAdmin || false,
-      createdAt: new Date() 
+      createdAt: new Date()
     };
     this.users.set(id, user);
     return user;
@@ -385,7 +385,7 @@ export class MemStorage implements IStorage {
   async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
     const user = this.users.get(userId);
     if (!user) return false;
-    
+
     user.password = newPassword;
     this.users.set(userId, user);
     return true;
@@ -394,7 +394,7 @@ export class MemStorage implements IStorage {
   async updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean> {
     const user = this.users.get(userId);
     if (!user) return false;
-    
+
     user.isAdmin = isAdmin;
     this.users.set(userId, user);
     return true;
@@ -417,8 +417,8 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
-  async createDistillery(insertDistillery: InsertDistillery): Promise<Distillery> {
-    const id = randomUUID();
+  async createDistillery(insertDistillery: InsertDistillery & { id?: string }): Promise<Distillery> {
+    const id = insertDistillery.id || randomUUID();
     const distillery: Distillery = {
       ...insertDistillery,
       id,
@@ -434,12 +434,12 @@ export class MemStorage implements IStorage {
   }
 
   async bulkCreateDistilleries(distilleries: InsertDistillery[]): Promise<Distillery[]> {
-    return distilleries.map(d => ({ 
-      ...d, 
-      id: randomUUID(), 
+    return distilleries.map(d => ({
+      ...d,
+      id: randomUUID(),
       createdAt: new Date(),
       status: d.status || "active",
-      country: d.country || "Scotland", 
+      country: d.country || "Scotland",
       founded: d.founded || null,
       website: d.website || null,
       description: d.description || null,
@@ -489,9 +489,9 @@ export class MemStorage implements IStorage {
   }
 
   async bulkCreateProducts(products: InsertProduct[]): Promise<Product[]> {
-    return products.map(p => ({ 
-      ...p, 
-      id: randomUUID(), 
+    return products.map(p => ({
+      ...p,
+      id: randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
       distillery: p.distillery || null,

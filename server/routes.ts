@@ -359,7 +359,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let distilleryId = product.distillery;
 
         // If distillery is provided as a name (not a UUID), resolve it
-        if (distilleryId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(distilleryId)) {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(distilleryId);
+
+        if (distilleryId && !isUUID) {
           const distilleryName = distilleryId.trim();
 
           // Check if distillery exists
@@ -377,6 +379,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           distilleryId = distillery.id;
+        } else if (distilleryId && isUUID) {
+          // Check if distillery exists by ID
+          const existing = await storage.getDistillery(distilleryId);
+          if (!existing) {
+            console.log(`Creating placeholder for missing distillery ID: ${distilleryId}`);
+            // Create placeholder distillery with the specific ID
+            const newDistillery = await storage.createDistillery({
+              id: distilleryId,
+              name: `Unknown Distillery (${distilleryId.substring(0, 8)})`,
+              region: "Unknown",
+              country: "Scotland",
+              description: "Auto-created placeholder for missing distillery ID during bulk import",
+            });
+            newDistilleries.push(newDistillery.name);
+          }
         }
 
         processedProducts.push({
