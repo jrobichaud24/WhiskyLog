@@ -6,7 +6,7 @@ const app = express();
 
 // Canonical domain redirect: force www to non-www
 app.use((req, res, next) => {
-  if (req.hostname.startsWith("www.")) {
+  if (req.hostname.startsWith("www.") && req.path !== '/sw.js') {
     const newHost = req.hostname.slice(4);
     // Use x-forwarded-proto if available (for proxies), otherwise fallback to req.protocol
     const protocol = req.headers["x-forwarded-proto"] || req.protocol;
