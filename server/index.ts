@@ -4,6 +4,17 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Canonical domain redirect: force www to non-www
+app.use((req, res, next) => {
+  if (req.hostname.startsWith("www.")) {
+    const newHost = req.hostname.slice(4);
+    // Use x-forwarded-proto if available (for proxies), otherwise fallback to req.protocol
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    return res.redirect(301, `${protocol}://${newHost}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Increase body size limit for image uploads (10MB for base64 encoded images)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
