@@ -1,0 +1,9 @@
+{
+  "Lowlands": 35,
+  "Campbeltown": 4,
+  "Highlands": 56,
+  "Island": 14,
+  "Islay": 10,
+  "Speyside": 62,
+  "Unknown": 5
+}

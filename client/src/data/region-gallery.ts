@@ -5,7 +5,7 @@ import lowlandImage from "@assets/lowlands_1755825572942.webp";
 import islandImage from "@assets/islands_1755825588916.webp";
 import campbeltownImage from "@assets/campbeltown_1755825615246.webp";
 
-export type ScottishRegion = "Highland" | "Speyside" | "Islay" | "Lowland" | "Island" | "Campbeltown";
+export type ScottishRegion = "Highlands" | "Speyside" | "Islay" | "Lowlands" | "Island" | "Campbeltown";
 
 export interface RegionGalleryItem {
   region: ScottishRegion;
@@ -16,8 +16,8 @@ export interface RegionGalleryItem {
 
 export const regionGalleryData: RegionGalleryItem[] = [
   {
-    region: "Highland",
-    displayName: "Highland Region",
+    region: "Highlands",
+    displayName: "Highlands",
     image: highlandImage,
     alt: "Highland Region landscape with rolling hills and misty mountains"
   },
@@ -34,8 +34,8 @@ export const regionGalleryData: RegionGalleryItem[] = [
     alt: "Islay coastal cliffs and ocean with dramatic waves"
   },
   {
-    region: "Lowland",
-    displayName: "Lowland",
+    region: "Lowlands",
+    displayName: "Lowlands",
     image: lowlandImage,
     alt: "Lowland rolling hills and river valley"
   },
