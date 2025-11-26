@@ -177,31 +177,8 @@ export async function unregisterServiceWorker(): Promise<boolean> {
 // Initialize service worker on page load
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    // Check if we are on the non-www domain (and not localhost/render)
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const isRender = window.location.hostname.endsWith('.onrender.com');
-    const isWww = window.location.hostname.startsWith('www.');
-
-    if (!isLocalhost && !isRender && !isWww) {
-      console.log('🌐 Detected non-www domain, checking for service workers to unregister...');
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        if (registrations.length > 0) {
-          console.log(`🗑️ Found ${registrations.length} service workers, unregistering...`);
-          await Promise.all(registrations.map(r => r.unregister()));
-          console.log('✅ All service workers unregistered. Reloading to force redirect...');
-          window.location.reload();
-        } else {
-          console.log('ℹ️ No service workers found on non-www.');
-          // Force reload anyway to trigger redirect if no SW was found but we're still here
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error('❌ Error checking/unregistering service workers:', error);
-      }
-      // Do not register new SW on non-www
-      return;
-    }
+    // Logic for non-www redirect removed to prevent conflicts
+    // if (!isLocalhost && !isRender && !isWww) { ... }
 
     console.log('🚀 Page loaded, initializing service worker...');
     registerServiceWorker().then(registration => {
