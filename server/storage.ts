@@ -9,7 +9,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { users, distilleries, products, userProducts, appReviews, badges, userBadges } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
@@ -23,6 +23,7 @@ export interface IStorage {
   updateUserPassword(userId: string, newPassword: string): Promise<boolean>;
   updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<boolean>;
   deleteUser(userId: string): Promise<boolean>;
+  bulkDeleteUsers(userIds: string[]): Promise<boolean>;
 
   // Distillery operations
   getDistilleries(): Promise<Distillery[]>;
@@ -30,6 +31,7 @@ export interface IStorage {
   getDistilleryByName(name: string): Promise<Distillery | undefined>;
   createDistillery(distillery: InsertDistillery & { id?: string }): Promise<Distillery>;
   bulkCreateDistilleries(distilleries: InsertDistillery[]): Promise<Distillery[]>;
+  bulkDeleteDistilleries(ids: string[]): Promise<boolean>;
 
   // Product operations
   getProducts(): Promise<Product[]>;
@@ -38,6 +40,7 @@ export interface IStorage {
   getProductByNameAndDistillery(name: string, distilleryId: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   bulkCreateProducts(products: InsertProduct[]): Promise<Product[]>;
+  bulkDeleteProducts(ids: string[]): Promise<boolean>;
 
   // User product operations
   getUserProducts(userId: string): Promise<UserProduct[]>;
@@ -95,6 +98,15 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async bulkDeleteDistilleries(ids: string[]): Promise<boolean> {
+    if (ids.length === 0) return true;
+    const result = await db
+      .delete(distilleries)
+      .where(inArray(distilleries.id, ids))
+      .returning();
+    return result.length > 0;
+  }
+
   // Product operations
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);
@@ -131,6 +143,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertProducts)
       .returning();
     return result;
+  }
+
+  async bulkDeleteProducts(ids: string[]): Promise<boolean> {
+    if (ids.length === 0) return true;
+    const result = await db
+      .delete(products)
+      .where(inArray(products.id, ids))
+      .returning();
+    return result.length > 0;
   }
 
   // User operations
@@ -196,6 +217,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
 
+    return result.length > 0;
+  }
+
+  async bulkDeleteUsers(userIds: string[]): Promise<boolean> {
+    if (userIds.length === 0) return true;
+    const result = await db
+      .delete(users)
+      .where(inArray(users.id, userIds))
+      .returning();
     return result.length > 0;
   }
 
@@ -404,6 +434,11 @@ export class MemStorage implements IStorage {
     return this.users.delete(userId);
   }
 
+  async bulkDeleteUsers(userIds: string[]): Promise<boolean> {
+    userIds.forEach(id => this.users.delete(id));
+    return true;
+  }
+
   // Distillery operations
   async getDistilleries(): Promise<Distillery[]> {
     return [];
@@ -445,6 +480,11 @@ export class MemStorage implements IStorage {
       description: d.description || null,
       imageUrl: d.imageUrl || null,
     }));
+  }
+
+  async bulkDeleteDistilleries(ids: string[]): Promise<boolean> {
+    ids.forEach(id => this.distilleries.delete(id));
+    return true;
   }
 
   // Product operations
@@ -508,6 +548,11 @@ export class MemStorage implements IStorage {
       productImage: p.productImage || null,
       createdByUserId: p.createdByUserId || null,
     }));
+  }
+
+  async bulkDeleteProducts(ids: string[]): Promise<boolean> {
+    ids.forEach(id => this.products.delete(id));
+    return true;
   }
 
   // User product operations (stub implementations)

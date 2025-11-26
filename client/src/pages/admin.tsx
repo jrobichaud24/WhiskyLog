@@ -13,6 +13,18 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useLogout } from "@/hooks/useLogout";
 import { convertCSVToJSON } from "@/lib/csvUtils";
 
@@ -128,6 +140,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
   const [bulkData, setBulkData] = useState("");
   const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Filter states
   const [filterRegion, setFilterRegion] = useState<string>("all");
@@ -168,6 +181,48 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
       toast({
         title: "Import Failed",
         description: error.message || "Failed to import distilleries",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === filteredDistilleries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDistilleries.map(d => d.id)));
+    }
+  };
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return await apiRequest("/api/admin/distilleries", {
+        method: "DELETE",
+        body: { ids }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Selected distilleries deleted successfully",
+      });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete distilleries",
         variant: "destructive",
       });
     },
@@ -235,6 +290,33 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           <p className="text-slate-600">Manage the master list of Scottish distilleries ({distilleries.length} total)</p>
         </div>
         <div className="flex space-x-3">
+          {selectedIds.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedIds.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {selectedIds.size} distilleries. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowBulkImport(!showBulkImport)}
@@ -513,7 +595,27 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                     <div key={distillery.id}>
                       {/* Region Header */}
                       {isFirstInRegion && (
-                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
+                        <div className="bg-amber-50 px-4 py-2 border-b border-amber-100 flex items-center">
+                          <Checkbox
+                            checked={
+                              sortedArray
+                                .filter(d => d.region === distillery.region)
+                                .every(d => selectedIds.has(d.id))
+                            }
+                            onCheckedChange={(checked) => {
+                              const regionIds = sortedArray
+                                .filter(d => d.region === distillery.region)
+                                .map(d => d.id);
+                              const newSelected = new Set(selectedIds);
+                              if (checked) {
+                                regionIds.forEach(id => newSelected.add(id));
+                              } else {
+                                regionIds.forEach(id => newSelected.delete(id));
+                              }
+                              setSelectedIds(newSelected);
+                            }}
+                            className="mr-3 border-amber-400 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+                          />
                           <h4 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">
                             {distillery.region}
                           </h4>
@@ -526,6 +628,13 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
                           }`}
                         data-testid={`row-distillery-${distillery.id}`}
                       >
+                        <div className="flex items-center mr-4">
+                          <Checkbox
+                            checked={selectedIds.has(distillery.id)}
+                            onCheckedChange={() => toggleSelection(distillery.id)}
+                            className="border-slate-300 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-3">
                             <div className="flex-1">
@@ -596,1205 +705,1378 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
 }
 
 function ProductsManager({ products, distilleries, isLoading }: { products: Product[], distilleries: Distillery[], isLoading: boolean }) {
-    const { toast } = useToast();
-    const [showBulkImport, setShowBulkImport] = useState(false);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [bulkData, setBulkData] = useState("");
-    const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [apiImportStats, setApiImportStats] = useState<any>(null);
+  const { toast } = useToast();
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [bulkData, setBulkData] = useState("");
+  const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [apiImportStats, setApiImportStats] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // TheWhiskyEdition API import mutation
-    const apiImportMutation = useMutation({
-        mutationFn: async () => {
-            console.log("Starting import mutation...");
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
 
-            // Create an AbortController with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => {
-                console.log("Import timeout reached, aborting...");
-                controller.abort();
-            }, 90000); // 90 second timeout (enough for multiple batches)
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return await apiRequest("/api/admin/products", {
+        method: "DELETE",
+        body: { ids }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Selected products deleted successfully",
+      });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete products",
+        variant: "destructive",
+      });
+    },
+  });
 
-            try {
-                const response = await fetch("/api/admin/import-whiskies", {
-                    method: "POST",
-                    credentials: "include",
-                    signal: controller.signal,
-                });
+  // TheWhiskyEdition API import mutation
+  const apiImportMutation = useMutation({
+    mutationFn: async () => {
+      console.log("Starting import mutation...");
 
-                clearTimeout(timeoutId);
+      // Create an AbortController with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log("Import timeout reached, aborting...");
+        controller.abort();
+      }, 90000); // 90 second timeout (enough for multiple batches)
 
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`${response.status}: ${text}`);
-                }
+      try {
+        const response = await fetch("/api/admin/import-whiskies", {
+          method: "POST",
+          credentials: "include",
+          signal: controller.signal,
+        });
 
-                const data = await response.json();
-                console.log("Import API response:", data);
-                return data;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error instanceof Error && error.name === 'AbortError') {
-                    throw new Error('Import timeout after 90 seconds - the operation may still be running on the server');
-                }
-                throw error;
-            }
-        },
-        onSuccess: (result) => {
-            console.log("Import success, result:", result);
-            if (result && result.stats) {
-                setApiImportStats(result.stats);
-                toast({
-                    title: "Import Completed",
-                    description: `Imported ${result.stats.newProducts} products and ${result.stats.newDistilleries} distilleries`,
-                });
-            } else {
-                console.error("Unexpected response format:", result);
-                toast({
-                    title: "Import Completed",
-                    description: "Import finished but response format was unexpected",
-                });
-            }
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
-        },
-        onError: (error: any) => {
-            console.error("Import error:", error);
-            setApiImportStats(null); // Clear stats on error to allow retry
-            toast({
-                title: "Import Failed",
-                description: error.message || "Failed to import from TheWhiskyEdition API",
-                variant: "destructive",
-            });
-        },
-    });
+        clearTimeout(timeoutId);
 
-    // Bulk import mutation
-    const bulkImportMutation = useMutation({
-        mutationFn: async (data: any[]) => {
-            return await apiRequest("/api/products/bulk", {
-                method: "POST",
-                body: data
-            });
-        },
-        onSuccess: (result) => {
-            toast({
-                title: "Success",
-                description: result.message,
-            });
-            setBulkData("");
-            setShowBulkImport(false);
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Import Failed",
-                description: error.message || "Failed to import products",
-                variant: "destructive",
-            });
-        },
-    });
-
-    const handleBulkImport = () => {
-        try {
-            const data = JSON.parse(bulkData);
-            if (!Array.isArray(data)) {
-                throw new Error("Data must be an array");
-            }
-            bulkImportMutation.mutate(data);
-        } catch (error) {
-            toast({
-                title: "Invalid JSON",
-                description: "Please provide valid JSON data",
-                variant: "destructive",
-            });
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${response.status}: ${text}`);
         }
-    };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+        const data = await response.json();
+        console.log("Import API response:", data);
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Import timeout after 90 seconds - the operation may still be running on the server');
+        }
+        throw error;
+      }
+    },
+    onSuccess: (result) => {
+      console.log("Import success, result:", result);
+      if (result && result.stats) {
+        setApiImportStats(result.stats);
+        toast({
+          title: "Import Completed",
+          description: `Imported ${result.stats.newProducts} products and ${result.stats.newDistilleries} distilleries`,
+        });
+      } else {
+        console.error("Unexpected response format:", result);
+        toast({
+          title: "Import Completed",
+          description: "Import finished but response format was unexpected",
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+    },
+    onError: (error: any) => {
+      console.error("Import error:", error);
+      setApiImportStats(null); // Clear stats on error to allow retry
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import from TheWhiskyEdition API",
+        variant: "destructive",
+      });
+    },
+  });
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            try {
-                if (file.name.endsWith('.csv')) {
-                    let jsonData = convertCSVToJSON(text, 'products');
+  // Bulk import mutation
+  const bulkImportMutation = useMutation({
+    mutationFn: async (data: any[]) => {
+      return await apiRequest("/api/products/bulk", {
+        method: "POST",
+        body: data
+      });
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Success",
+        description: result.message,
+      });
+      setBulkData("");
+      setShowBulkImport(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import products",
+        variant: "destructive",
+      });
+    },
+  });
 
-                    // Resolve distillery names to IDs
-                    const distilleryMap = new Map(
-                        distilleries.map(d => [d.name.toLowerCase(), d.id])
-                    );
+  const handleBulkImport = () => {
+    try {
+      const data = JSON.parse(bulkData);
+      if (!Array.isArray(data)) {
+        throw new Error("Data must be an array");
+      }
+      bulkImportMutation.mutate(data);
+    } catch (error) {
+      toast({
+        title: "Invalid JSON",
+        description: "Please provide valid JSON data",
+        variant: "destructive",
+      });
+    }
+  };
 
-                    jsonData = jsonData.map(item => {
-                        if (item.distillery) {
-                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.distillery);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-                            if (!isUUID) {
-                                const lowerName = item.distillery.toLowerCase();
-                                if (distilleryMap.has(lowerName)) {
-                                    return { ...item, distillery: distilleryMap.get(lowerName) };
-                                }
-                                const foundDistillery = distilleries.find(d => d.name.toLowerCase() === lowerName);
-                                if (foundDistillery) {
-                                    return { ...item, distillery: foundDistillery.id };
-                                }
-                            }
-                        }
-                        return item;
-                    });
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      try {
+        if (file.name.endsWith('.csv')) {
+          let jsonData = convertCSVToJSON(text, 'products');
 
-                    setBulkData(JSON.stringify(jsonData, null, 2));
-                    setImportMethod("csv");
-                } else if (file.name.endsWith('.json')) {
-                    setBulkData(text);
-                    setImportMethod("json");
-                } else {
-                    throw new Error("Please upload a CSV or JSON file");
+          // Resolve distillery names to IDs
+          const distilleryMap = new Map(
+            distilleries.map(d => [d.name.toLowerCase(), d.id])
+          );
+
+          jsonData = jsonData.map(item => {
+            if (item.distillery) {
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.distillery);
+
+              if (!isUUID) {
+                const lowerName = item.distillery.toLowerCase();
+                if (distilleryMap.has(lowerName)) {
+                  return { ...item, distillery: distilleryMap.get(lowerName) };
                 }
-                toast({
-                    title: "File uploaded successfully",
-                    description: `Converted ${file.name} to JSON format`,
-                });
-            } catch (error) {
-                toast({
-                    title: "File conversion failed",
-                    description: error instanceof Error ? error.message : "Failed to process file",
-                    variant: "destructive",
-                });
+                const foundDistillery = distilleries.find(d => d.name.toLowerCase() === lowerName);
+                if (foundDistillery) {
+                  return { ...item, distillery: foundDistillery.id };
+                }
+              }
             }
-        };
-        reader.readAsText(file);
-    };
+            return item;
+          });
 
-    const triggerFileUpload = () => {
-        fileInputRef.current?.click();
-    };
-
-    // Get distillery name by ID
-    const getDistilleryName = (distilleryId: string | null) => {
-        if (!distilleryId) return "Unknown Distillery";
-        const distillery = distilleries.find(d => d.id === distilleryId);
-        return distillery?.name || "Unknown Distillery";
-    };
-
-    // Sort products by distillery name, then by product name
-    const sortedProducts = [...products].sort((a, b) => {
-        const distilleryA = getDistilleryName(a.distillery);
-        const distilleryB = getDistilleryName(b.distillery);
-
-        if (distilleryA !== distilleryB) {
-            return distilleryA.localeCompare(distilleryB);
+          setBulkData(JSON.stringify(jsonData, null, 2));
+          setImportMethod("csv");
+        } else if (file.name.endsWith('.json')) {
+          setBulkData(text);
+          setImportMethod("json");
+        } else {
+          throw new Error("Please upload a CSV or JSON file");
         }
-        return a.name.localeCompare(b.name);
-    });
+        toast({
+          title: "File uploaded successfully",
+          description: `Converted ${file.name} to JSON format`,
+        });
+      } catch (error) {
+        toast({
+          title: "File conversion failed",
+          description: error instanceof Error ? error.message : "Failed to process file",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
 
-    // Group products by distillery for display
-    const groupedProducts = sortedProducts.reduce((acc, product) => {
-        const distilleryName = getDistilleryName(product.distillery);
-        if (!acc[distilleryName]) {
-            acc[distilleryName] = [];
-        }
-        acc[distilleryName].push(product);
-        return acc;
-    }, {} as Record<string, typeof products>);
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
-    return (
-        <div className="space-y-6">
-            {/* TheWhiskyEdition API Import */}
-            <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                        <Globe className="h-5 w-5 text-purple-600" />
-                        <span>Import from TheWhiskyEdition API</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Automatically import whiskies from TheWhiskyEdition.com database. This will fetch all available whiskies, create missing distilleries, and import products with tasting notes.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Button
-                        onClick={() => apiImportMutation.mutate()}
-                        disabled={apiImportMutation.isPending}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                        data-testid="button-import-api"
-                    >
-                        {apiImportMutation.isPending ? (
-                            <>
-                                <Upload className="h-4 w-4 mr-2 animate-pulse" />
-                                Importing...
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Start Import
-                            </>
-                        )}
-                    </Button>
+  // Get distillery name by ID
+  const getDistilleryName = (distilleryId: string | null) => {
+    if (!distilleryId) return "Unknown Distillery";
+    const distillery = distilleries.find(d => d.id === distilleryId);
+    return distillery?.name || "Unknown Distillery";
+  };
 
-                    {apiImportStats && (
-                        <div className="mt-4 p-4 bg-white rounded-lg border border-purple-200">
-                            <h4 className="font-semibold text-slate-800 mb-3">Import Results:</h4>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div>
-                                    <span className="text-slate-600">Whiskies Fetched:</span>
-                                    <span className="ml-2 font-semibold text-slate-800">{apiImportStats.totalFetched}</span>
-                                </div>
-                                <div>
-                                    <span className="text-slate-600">New Products:</span>
-                                    <span className="ml-2 font-semibold text-green-600">{apiImportStats.newProducts}</span>
-                                </div>
-                                <div>
-                                    <span className="text-slate-600">New Distilleries:</span>
-                                    <span className="ml-2 font-semibold text-blue-600">{apiImportStats.newDistilleries}</span>
-                                </div>
-                                <div>
-                                    <span className="text-slate-600">Skipped (Duplicates):</span>
-                                    <span className="ml-2 font-semibold text-amber-600">{apiImportStats.skippedProducts}</span>
-                                </div>
-                            </div>
-                            {apiImportStats.errors && apiImportStats.errors.length > 0 && (
-                                <div className="mt-3 p-2 bg-red-50 rounded text-xs text-red-700">
-                                    <p className="font-semibold mb-1">Errors ({apiImportStats.errors.length}):</p>
-                                    {apiImportStats.errors.slice(0, 3).map((error: string, i: number) => (
-                                        <p key={i}>• {error}</p>
-                                    ))}
-                                    {apiImportStats.errors.length > 3 && (
-                                        <p className="mt-1 text-red-600">... and {apiImportStats.errors.length - 3} more</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+  // Sort products by distillery name, then by product name
+  const sortedProducts = [...products].sort((a, b) => {
+    const distilleryA = getDistilleryName(a.distillery);
+    const distilleryB = getDistilleryName(b.distillery);
 
-            {/* Actions */}
-            <div className="flex justify-between items-center">
+    if (distilleryA !== distilleryB) {
+      return distilleryA.localeCompare(distilleryB);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  // Group products by distillery for display
+  const groupedProducts = sortedProducts.reduce((acc, product) => {
+    const distilleryName = getDistilleryName(product.distillery);
+    if (!acc[distilleryName]) {
+      acc[distilleryName] = [];
+    }
+    acc[distilleryName].push(product);
+    return acc;
+  }, {} as Record<string, typeof products>);
+
+  return (
+    <div className="space-y-6">
+      {/* TheWhiskyEdition API Import */}
+      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Globe className="h-5 w-5 text-purple-600" />
+            <span>Import from TheWhiskyEdition API</span>
+          </CardTitle>
+          <CardDescription>
+            Automatically import whiskies from TheWhiskyEdition.com database. This will fetch all available whiskies, create missing distilleries, and import products with tasting notes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={() => apiImportMutation.mutate()}
+            disabled={apiImportMutation.isPending}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            data-testid="button-import-api"
+          >
+            {apiImportMutation.isPending ? (
+              <>
+                <Upload className="h-4 w-4 mr-2 animate-pulse" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Start Import
+              </>
+            )}
+          </Button>
+
+          {apiImportStats && (
+            <div className="mt-4 p-4 bg-white rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-slate-800 mb-3">Import Results:</h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                    <h2 className="text-2xl font-playfair font-bold text-slate-800">Products</h2>
-                    <p className="text-slate-600">Manage whisky products from all distilleries</p>
+                  <span className="text-slate-600">Whiskies Fetched:</span>
+                  <span className="ml-2 font-semibold text-slate-800">{apiImportStats.totalFetched}</span>
                 </div>
-                <div className="flex space-x-3">
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowBulkImport(!showBulkImport)}
-                        className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                        data-testid="button-bulk-import-products"
-                    >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Bulk Import
-                    </Button>
-                    <Button
-                        onClick={() => setShowAddForm(!showAddForm)}
-                        className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                        data-testid="button-add-product"
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Product
-                    </Button>
+                <div>
+                  <span className="text-slate-600">New Products:</span>
+                  <span className="ml-2 font-semibold text-green-600">{apiImportStats.newProducts}</span>
                 </div>
+                <div>
+                  <span className="text-slate-600">New Distilleries:</span>
+                  <span className="ml-2 font-semibold text-blue-600">{apiImportStats.newDistilleries}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">Skipped (Duplicates):</span>
+                  <span className="ml-2 font-semibold text-amber-600">{apiImportStats.skippedProducts}</span>
+                </div>
+              </div>
+              {apiImportStats.errors && apiImportStats.errors.length > 0 && (
+                <div className="mt-3 p-2 bg-red-50 rounded text-xs text-red-700">
+                  <p className="font-semibold mb-1">Errors ({apiImportStats.errors.length}):</p>
+                  {apiImportStats.errors.slice(0, 3).map((error: string, i: number) => (
+                    <p key={i}>• {error}</p>
+                  ))}
+                  {apiImportStats.errors.length > 3 && (
+                    <p className="mt-1 text-red-600">... and {apiImportStats.errors.length - 3} more</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-slate-800">Products</h2>
+          <p className="text-slate-600">Manage whisky products from all distilleries</p>
+        </div>
+        <div className="flex space-x-3">
+          {selectedIds.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedIds.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {selectedIds.size} products. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => setShowBulkImport(!showBulkImport)}
+            className="border-amber-200 text-amber-700 hover:bg-amber-50"
+            data-testid="button-bulk-import-products"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Import
+          </Button>
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+            data-testid="button-add-product"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
+      </div>
+
+      {/* Bulk Import Form */}
+      {showBulkImport && (
+        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+          <CardHeader>
+            <CardTitle>Bulk Import Products</CardTitle>
+            <CardDescription>
+              Upload a CSV file or paste JSON data. Required fields: name, distilleryId, abv
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Import Method Selection */}
+            <div className="flex items-center space-x-4">
+              <Label className="text-sm font-medium">Import Method:</Label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="json-import-products"
+                    name="import-method-products"
+                    checked={importMethod === "json"}
+                    onChange={() => setImportMethod("json")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="json-import-products" className="text-sm">JSON Text</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="csv-import-products"
+                    name="import-method-products"
+                    checked={importMethod === "csv"}
+                    onChange={() => setImportMethod("csv")}
+                    className="text-amber-600"
+                  />
+                  <Label htmlFor="csv-import-products" className="text-sm">CSV File</Label>
+                </div>
+              </div>
             </div>
 
-            {/* Bulk Import Form */}
-            {showBulkImport && (
-                <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
-                    <CardHeader>
-                        <CardTitle>Bulk Import Products</CardTitle>
-                        <CardDescription>
-                            Upload a CSV file or paste JSON data. Required fields: name, distilleryId, abv
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Import Method Selection */}
-                        <div className="flex items-center space-x-4">
-                            <Label className="text-sm font-medium">Import Method:</Label>
-                            <div className="flex items-center space-x-6">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="json-import-products"
-                                        name="import-method-products"
-                                        checked={importMethod === "json"}
-                                        onChange={() => setImportMethod("json")}
-                                        className="text-amber-600"
-                                    />
-                                    <Label htmlFor="json-import-products" className="text-sm">JSON Text</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="csv-import-products"
-                                        name="import-method-products"
-                                        checked={importMethod === "csv"}
-                                        onChange={() => setImportMethod("csv")}
-                                        className="text-amber-600"
-                                    />
-                                    <Label htmlFor="csv-import-products" className="text-sm">CSV File</Label>
-                                </div>
-                            </div>
-                        </div>
+            {/* CSV Upload Section */}
+            {importMethod === "csv" && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center bg-amber-50/50">
+                  <FileSpreadsheet className="h-12 w-12 text-amber-600 mx-auto mb-3" />
+                  <p className="text-slate-700 mb-4">
+                    Upload a CSV file with product data
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    CSV headers: name, distilleryId, age, abv, caskType, price, description, availability
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.json"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-file-upload-products"
+                  />
+                  <Button
+                    onClick={triggerFileUpload}
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    data-testid="button-upload-file-products"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose CSV File
+                  </Button>
+                </div>
 
-                        {/* CSV Upload Section */}
-                        {importMethod === "csv" && (
-                            <div className="space-y-4">
-                                <div className="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center bg-amber-50/50">
-                                    <FileSpreadsheet className="h-12 w-12 text-amber-600 mx-auto mb-3" />
-                                    <p className="text-slate-700 mb-4">
-                                        Upload a CSV file with product data
-                                    </p>
-                                    <p className="text-sm text-slate-500 mb-4">
-                                        CSV headers: name, distilleryId, age, abv, caskType, price, description, availability
-                                    </p>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".csv,.json"
-                                        onChange={handleFileUpload}
-                                        className="hidden"
-                                        data-testid="input-file-upload-products"
-                                    />
-                                    <Button
-                                        onClick={triggerFileUpload}
-                                        variant="outline"
-                                        className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                                        data-testid="button-upload-file-products"
-                                    >
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Choose CSV File
-                                    </Button>
-                                </div>
-
-                                {/* Distillery ID Helper */}
-                                <div className="bg-blue-50 rounded-lg p-4">
-                                    <h4 className="font-medium text-blue-800 mb-2">Available Distillery IDs:</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                        {distilleries.slice(0, 6).map((distillery) => (
-                                            <div key={distillery.id} className="text-blue-700">
-                                                <code className="bg-blue-100 px-1 rounded">{distillery.id.substring(0, 8)}...</code> = {distillery.name}
-                                            </div>
-                                        ))}
-                                        {distilleries.length > 6 && (
-                                            <div className="text-blue-600 text-xs col-span-2">
-                                                ... and {distilleries.length - 6} more. Check the Distilleries tab for full IDs.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* JSON Text Area */}
-                        {importMethod === "json" && (
-                            <div className="space-y-2">
-                                <Label htmlFor="json-data-products">JSON Data</Label>
-                                <Textarea
-                                    id="json-data-products"
-                                    value={bulkData}
-                                    onChange={(e) => setBulkData(e.target.value)}
-                                    placeholder='[{"name":"Macallan 18","distilleryId":"distillery-id","age":18,"abv":"43.0","description":"Premium whisky"}]'
-                                    className="min-h-32 font-mono text-sm"
-                                    data-testid="textarea-bulk-import-products"
-                                />
-                            </div>
-                        )}
-
-                        {/* Preview converted data */}
-                        {bulkData && (
-                            <div className="space-y-2">
-                                <Label>Data Preview</Label>
-                                <div className="bg-slate-100 rounded-lg p-4 max-h-40 overflow-y-auto">
-                                    <pre className="text-xs text-slate-700 whitespace-pre-wrap">
-                                        {JSON.stringify(JSON.parse(bulkData), null, 2).substring(0, 500)}
-                                        {JSON.stringify(JSON.parse(bulkData), null, 2).length > 500 && '...'}
-                                    </pre>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex space-x-3">
-                            <Button
-                                onClick={handleBulkImport}
-                                disabled={bulkImportMutation.isPending || !bulkData.trim()}
-                                className="bg-amber-500 hover:bg-amber-600"
-                                data-testid="button-execute-bulk-import-products"
-                            >
-                                {bulkImportMutation.isPending ? "Importing..." : "Import Data"}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setShowBulkImport(false);
-                                    setBulkData("");
-                                    setImportMethod("json");
-                                }}
-                                data-testid="button-cancel-bulk-import-products"
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Add Form */}
-            {showAddForm && (
-                <AddProductForm distilleries={distilleries} onSuccess={() => setShowAddForm(false)} />
-            )}
-
-            {/* Products List */}
-            <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-amber-100">
-                <CardContent className="p-0">
-                    {isLoading ? (
-                        <div className="space-y-4 p-6">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="animate-pulse">
-                                    <div className="h-4 bg-slate-200 rounded mb-2"></div>
-                                    <div className="h-3 bg-slate-200 rounded w-2/3"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : products.length > 0 ? (
-                        <div className="space-y-6">
-                            {Object.entries(groupedProducts).map(([distilleryName, distilleryProducts]) => (
-                                <div key={distilleryName}>
-                                    {/* Distillery Header */}
-                                    <div className="bg-amber-50 px-4 py-2 border-b border-amber-100">
-                                        <h4 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">
-                                            {distilleryName} ({distilleryProducts.length} products)
-                                        </h4>
-                                    </div>
-
-                                    {/* Products List */}
-                                    {distilleryProducts.map((product, index) => (
-                                        <div
-                                            key={product.id}
-                                            className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${index < distilleryProducts.length - 1 ? 'border-b border-slate-100' : ''
-                                                }`}
-                                            data-testid={`row-product-${product.id}`}
-                                        >
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center space-x-3">
-                                                    {/* Product Image */}
-                                                    <div className="flex-shrink-0">
-                                                        <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg overflow-hidden">
-                                                            {product.productImage ? (
-                                                                <img
-                                                                    src={product.productImage}
-                                                                    alt={`${product.name} bottle`}
-                                                                    className="w-full h-full object-cover"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.style.display = 'none';
-                                                                        const parent = target.parentElement;
-                                                                        if (parent) {
-                                                                            parent.classList.add('flex', 'items-center', 'justify-center');
-                                                                            const icon = document.createElement('svg');
-                                                                            icon.setAttribute('class', 'w-6 h-6 text-amber-700');
-                                                                            icon.setAttribute('fill', 'none');
-                                                                            icon.setAttribute('stroke', 'currentColor');
-                                                                            icon.setAttribute('viewBox', '0 0 24 24');
-                                                                            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>';
-                                                                            parent.appendChild(icon);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
-                                                                    <Package className="w-6 h-6 text-amber-700" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-product-name-${product.id}`}>
-                                                            {product.name}
-                                                        </h3>
-                                                        <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
-                                                            {product.abvPercent && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <span className="font-medium">ABV:</span>
-                                                                    <span>{product.abvPercent}%</span>
-                                                                </div>
-                                                            )}
-                                                            {product.volumeCl && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <span className="font-medium">Volume:</span>
-                                                                    <span>{product.volumeCl}cl</span>
-                                                                </div>
-                                                            )}
-                                                            {product.filtration && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <span className="font-medium">Filtration:</span>
-                                                                    <span>{product.filtration}</span>
-                                                                </div>
-                                                            )}
-                                                            {product.productUrl && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Globe className="h-3 w-3" />
-                                                                    <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
-                                                                        View Product
-                                                                    </a>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {product.description && (
-                                                            <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-product-description-${product.id}`}>
-                                                                {product.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center space-x-2 ml-4">
-                                                {product.price && (
-                                                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                                        £{product.price}
-                                                    </Badge>
-                                                )}
-                                                {product.appearance && (
-                                                    <Badge variant="outline" className="border-amber-200 text-amber-700">
-                                                        {product.appearance}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Package className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Products Found</h3>
-                            <p className="text-slate-500">Add products to start building your catalog</p>
-                        </div>
+                {/* Distillery ID Helper */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 mb-2">Available Distillery IDs:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {distilleries.slice(0, 6).map((distillery) => (
+                      <div key={distillery.id} className="text-blue-700">
+                        <code className="bg-blue-100 px-1 rounded">{distillery.id.substring(0, 8)}...</code> = {distillery.name}
+                      </div>
+                    ))}
+                    {distilleries.length > 6 && (
+                      <div className="text-blue-600 text-xs col-span-2">
+                        ... and {distilleries.length - 6} more. Check the Distilleries tab for full IDs.
+                      </div>
                     )}
-                </CardContent>
-            </Card>
-        </div>
-    );
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* JSON Text Area */}
+            {importMethod === "json" && (
+              <div className="space-y-2">
+                <Label htmlFor="json-data-products">JSON Data</Label>
+                <Textarea
+                  id="json-data-products"
+                  value={bulkData}
+                  onChange={(e) => setBulkData(e.target.value)}
+                  placeholder='[{"name":"Macallan 18","distilleryId":"distillery-id","age":18,"abv":"43.0","description":"Premium whisky"}]'
+                  className="min-h-32 font-mono text-sm"
+                  data-testid="textarea-bulk-import-products"
+                />
+              </div>
+            )}
+
+            {/* Preview converted data */}
+            {bulkData && (
+              <div className="space-y-2">
+                <Label>Data Preview</Label>
+                <div className="bg-slate-100 rounded-lg p-4 max-h-40 overflow-y-auto">
+                  <pre className="text-xs text-slate-700 whitespace-pre-wrap">
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).substring(0, 500)}
+                    {JSON.stringify(JSON.parse(bulkData), null, 2).length > 500 && '...'}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleBulkImport}
+                disabled={bulkImportMutation.isPending || !bulkData.trim()}
+                className="bg-amber-500 hover:bg-amber-600"
+                data-testid="button-execute-bulk-import-products"
+              >
+                {bulkImportMutation.isPending ? "Importing..." : "Import Data"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowBulkImport(false);
+                  setBulkData("");
+                  setImportMethod("json");
+                }}
+                data-testid="button-cancel-bulk-import-products"
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Form */}
+      {showAddForm && (
+        <AddProductForm distilleries={distilleries} onSuccess={() => setShowAddForm(false)} />
+      )}
+
+      {/* Products List */}
+      <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-amber-100">
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-4 p-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-slate-200 rounded mb-2"></div>
+                  <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : products.length > 0 ? (
+            <div className="space-y-6">
+              {Object.entries(groupedProducts).map(([distilleryName, distilleryProducts]) => (
+                <div key={distilleryName}>
+                  {/* Distillery Header */}
+                  {/* Distillery Header */}
+                  <div className="bg-amber-50 px-4 py-2 border-b border-amber-100 flex items-center">
+                    <Checkbox
+                      checked={
+                        distilleryProducts.every(p => selectedIds.has(p.id))
+                      }
+                      onCheckedChange={(checked) => {
+                        const productIds = distilleryProducts.map(p => p.id);
+                        const newSelected = new Set(selectedIds);
+                        if (checked) {
+                          productIds.forEach(id => newSelected.add(id));
+                        } else {
+                          productIds.forEach(id => newSelected.delete(id));
+                        }
+                        setSelectedIds(newSelected);
+                      }}
+                      className="mr-3 border-amber-400 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+                    />
+                    <h4 className="font-semibold text-amber-800 text-sm uppercase tracking-wide">
+                      {distilleryName} ({distilleryProducts.length} products)
+                    </h4>
+                  </div>
+
+                  {/* Products List */}
+                  {distilleryProducts.map((product, index) => (
+                    <div
+                      key={product.id}
+                      className={`flex items-center justify-between p-4 hover:bg-amber-50 transition-colors ${index < distilleryProducts.length - 1 ? 'border-b border-slate-100' : ''
+                        }`}
+                      data-testid={`row-product-${product.id}`}
+                    >
+                      <div className="flex items-center mr-4">
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelection(product.id)}
+                          className="border-slate-300 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          {/* Product Image */}
+                          <div className="flex-shrink-0">
+                            <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg overflow-hidden">
+                              {product.productImage ? (
+                                <img
+                                  src={product.productImage}
+                                  alt={`${product.name} bottle`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.classList.add('flex', 'items-center', 'justify-center');
+                                      const icon = document.createElement('svg');
+                                      icon.setAttribute('class', 'w-6 h-6 text-amber-700');
+                                      icon.setAttribute('fill', 'none');
+                                      icon.setAttribute('stroke', 'currentColor');
+                                      icon.setAttribute('viewBox', '0 0 24 24');
+                                      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>';
+                                      parent.appendChild(icon);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-amber-700" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-800 truncate" data-testid={`text-product-name-${product.id}`}>
+                              {product.name}
+                            </h3>
+                            <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
+                              {product.abvPercent && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">ABV:</span>
+                                  <span>{product.abvPercent}%</span>
+                                </div>
+                              )}
+                              {product.volumeCl && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">Volume:</span>
+                                  <span>{product.volumeCl}cl</span>
+                                </div>
+                              )}
+                              {product.filtration && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="font-medium">Filtration:</span>
+                                  <span>{product.filtration}</span>
+                                </div>
+                              )}
+                              {product.productUrl && (
+                                <div className="flex items-center space-x-1">
+                                  <Globe className="h-3 w-3" />
+                                  <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
+                                    View Product
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            {product.description && (
+                              <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-product-description-${product.id}`}>
+                                {product.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        {product.price && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            £{product.price}
+                          </Badge>
+                        )}
+                        {product.appearance && (
+                          <Badge variant="outline" className="border-amber-200 text-amber-700">
+                            {product.appearance}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Products Found</h3>
+              <p className="text-slate-500">Add products to start building your catalog</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 function AddDistilleryForm({ onSuccess }: { onSuccess: () => void }) {
-    const { toast } = useToast();
-    const [formData, setFormData] = useState({
-        name: "",
-        region: "",
-        country: "Scotland",
-        founded: "",
-        status: "active",
-        website: "",
-        description: "",
-    });
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: "",
+    region: "",
+    country: "Scotland",
+    founded: "",
+    status: "active",
+    website: "",
+    description: "",
+  });
 
-    const createMutation = useMutation({
-        mutationFn: async (data: any) => {
-            return await apiRequest("/api/distilleries", {
-                method: "POST",
-                body: data
-            });
-        },
-        onSuccess: () => {
-            toast({
-                title: "Success",
-                description: "Distillery created successfully",
-            });
-            onSuccess();
-            queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to create distillery",
-                variant: "destructive",
-            });
-        },
-    });
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("/api/distilleries", {
+        method: "POST",
+        body: data
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Distillery created successfully",
+      });
+      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create distillery",
+        variant: "destructive",
+      });
+    },
+  });
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const submitData = {
-            ...formData,
-            founded: formData.founded ? parseInt(formData.founded) : undefined,
-        };
-        createMutation.mutate(submitData);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitData = {
+      ...formData,
+      founded: formData.founded ? parseInt(formData.founded) : undefined,
     };
+    createMutation.mutate(submitData);
+  };
 
-    return (
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
-            <CardHeader>
-                <CardTitle>Add New Distillery</CardTitle>
-                <CardDescription>Create a new distillery entry</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Name *</Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                            data-testid="input-distillery-name"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="region">Region *</Label>
-                        <Input
-                            id="region"
-                            value={formData.region}
-                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                            placeholder="e.g., Speyside, Highland, Islay"
-                            required
-                            data-testid="input-distillery-region"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                            id="country"
-                            value={formData.country}
-                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                            data-testid="input-distillery-country"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="founded">Founded Year</Label>
-                        <Input
-                            id="founded"
-                            type="number"
-                            value={formData.founded}
-                            onChange={(e) => setFormData({ ...formData, founded: e.target.value })}
-                            placeholder="1824"
-                            data-testid="input-distillery-founded"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="website">Website</Label>
-                        <Input
-                            id="website"
-                            type="url"
-                            value={formData.website}
-                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                            placeholder="https://example.com"
-                            data-testid="input-distillery-website"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="status">Status</Label>
-                        <select
-                            id="status"
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            data-testid="select-distillery-status"
-                        >
-                            <option value="active">Active</option>
-                            <option value="closed">Closed</option>
-                            <option value="demolished">Demolished</option>
-                        </select>
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Brief description of the distillery..."
-                            data-testid="textarea-distillery-description"
-                        />
-                    </div>
-                    <div className="md:col-span-2 flex space-x-3">
-                        <Button
-                            type="submit"
-                            disabled={createMutation.isPending}
-                            className="bg-amber-500 hover:bg-amber-600"
-                            data-testid="button-submit-distillery"
-                        >
-                            {createMutation.isPending ? "Creating..." : "Create Distillery"}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onSuccess}
-                            data-testid="button-cancel-distillery"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    );
+  return (
+    <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+      <CardHeader>
+        <CardTitle>Add New Distillery</CardTitle>
+        <CardDescription>Create a new distillery entry</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              data-testid="input-distillery-name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="region">Region *</Label>
+            <Input
+              id="region"
+              value={formData.region}
+              onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+              placeholder="e.g., Speyside, Highland, Islay"
+              required
+              data-testid="input-distillery-region"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Input
+              id="country"
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              data-testid="input-distillery-country"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="founded">Founded Year</Label>
+            <Input
+              id="founded"
+              type="number"
+              value={formData.founded}
+              onChange={(e) => setFormData({ ...formData, founded: e.target.value })}
+              placeholder="1824"
+              data-testid="input-distillery-founded"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              type="url"
+              value={formData.website}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              placeholder="https://example.com"
+              data-testid="input-distillery-website"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              data-testid="select-distillery-status"
+            >
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+              <option value="demolished">Demolished</option>
+            </select>
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Brief description of the distillery..."
+              data-testid="textarea-distillery-description"
+            />
+          </div>
+          <div className="md:col-span-2 flex space-x-3">
+            <Button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="bg-amber-500 hover:bg-amber-600"
+              data-testid="button-submit-distillery"
+            >
+              {createMutation.isPending ? "Creating..." : "Create Distillery"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSuccess}
+              data-testid="button-cancel-distillery"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function AddProductForm({ distilleries, onSuccess }: { distilleries: Distillery[], onSuccess: () => void }) {
-    const { toast } = useToast();
-    const [formData, setFormData] = useState({
-        name: "",
-        distillery: "",
-        price: "",
-        abvPercent: "",
-        volumeCl: "",
-        filtration: "",
-        appearance: "",
-        description: "",
-        tastingNose: "",
-        tastingTaste: "",
-        tastingFinish: "",
-        productUrl: "",
-        productImage: "",
-    });
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: "",
+    distillery: "",
+    price: "",
+    abvPercent: "",
+    volumeCl: "",
+    filtration: "",
+    appearance: "",
+    description: "",
+    tastingNose: "",
+    tastingTaste: "",
+    tastingFinish: "",
+    productUrl: "",
+    productImage: "",
+  });
 
-    const createMutation = useMutation({
-        mutationFn: async (data: any) => {
-            return await apiRequest("/api/products", {
-                method: "POST",
-                body: data
-            });
-        },
-        onSuccess: () => {
-            toast({
-                title: "Success",
-                description: "Product created successfully",
-            });
-            onSuccess();
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to create product",
-                variant: "destructive",
-            });
-        },
-    });
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("/api/products", {
+        method: "POST",
+        body: data
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Product created successfully",
+      });
+      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create product",
+        variant: "destructive",
+      });
+    },
+  });
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const submitData = {
-            ...formData,
-            price: formData.price ? parseFloat(formData.price) : undefined,
-            abvPercent: formData.abvPercent ? parseFloat(formData.abvPercent) : undefined,
-            volumeCl: formData.volumeCl ? parseFloat(formData.volumeCl) : undefined,
-        };
-        createMutation.mutate(submitData);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitData = {
+      ...formData,
+      price: formData.price ? parseFloat(formData.price) : undefined,
+      abvPercent: formData.abvPercent ? parseFloat(formData.abvPercent) : undefined,
+      volumeCl: formData.volumeCl ? parseFloat(formData.volumeCl) : undefined,
     };
+    createMutation.mutate(submitData);
+  };
 
-    return (
-        <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
-            <CardHeader>
-                <CardTitle>Add New Product</CardTitle>
-                <CardDescription>Create a new whisky product entry</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="product-name">Name *</Label>
-                        <Input
-                            id="product-name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="e.g., Macallan 18 Year Old"
-                            required
-                            data-testid="input-product-name"
-                        />
-                    </div>
+  return (
+    <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+      <CardHeader>
+        <CardTitle>Add New Product</CardTitle>
+        <CardDescription>Create a new whisky product entry</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="product-name">Name *</Label>
+            <Input
+              id="product-name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Macallan 18 Year Old"
+              required
+              data-testid="input-product-name"
+            />
+          </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="distillery">Distillery *</Label>
-                        <select
-                            id="distillery"
-                            value={formData.distillery}
-                            onChange={(e) => setFormData({ ...formData, distillery: e.target.value })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            required
-                            data-testid="select-product-distillery"
-                        >
-                            <option value="">Select a distillery</option>
-                            {distilleries.map((distillery) => (
-                                <option key={distillery.id} value={distillery.id}>
-                                    {distillery.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+          <div className="space-y-2">
+            <Label htmlFor="distillery">Distillery *</Label>
+            <select
+              id="distillery"
+              value={formData.distillery}
+              onChange={(e) => setFormData({ ...formData, distillery: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              required
+              data-testid="select-product-distillery"
+            >
+              <option value="">Select a distillery</option>
+              {distilleries.map((distillery) => (
+                <option key={distillery.id} value={distillery.id}>
+                  {distillery.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="price">Price (£)</Label>
-                        <Input
-                            id="price"
-                            type="number"
-                            step="0.01"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                            placeholder="299.99"
-                            data-testid="input-product-price"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (£)</Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              placeholder="299.99"
+              data-testid="input-product-price"
+            />
+          </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="abv-percent">ABV %</Label>
-                        <Input
-                            id="abv-percent"
-                            type="number"
-                            step="0.1"
-                            value={formData.abvPercent}
-                            onChange={(e) => setFormData({ ...formData, abvPercent: e.target.value })}
-                            placeholder="43.0"
-                            data-testid="input-product-abv-percent"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <Label htmlFor="abv-percent">ABV %</Label>
+            <Input
+              id="abv-percent"
+              type="number"
+              step="0.1"
+              value={formData.abvPercent}
+              onChange={(e) => setFormData({ ...formData, abvPercent: e.target.value })}
+              placeholder="43.0"
+              data-testid="input-product-abv-percent"
+            />
+          </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="volume-cl">Volume (cl)</Label>
-                        <Input
-                            id="volume-cl"
-                            type="number"
-                            step="0.1"
-                            value={formData.volumeCl}
-                            onChange={(e) => setFormData({ ...formData, volumeCl: e.target.value })}
-                            placeholder="70"
-                            data-testid="input-product-volume-cl"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <Label htmlFor="volume-cl">Volume (cl)</Label>
+            <Input
+              id="volume-cl"
+              type="number"
+              step="0.1"
+              value={formData.volumeCl}
+              onChange={(e) => setFormData({ ...formData, volumeCl: e.target.value })}
+              placeholder="70"
+              data-testid="input-product-volume-cl"
+            />
+          </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="filtration">Filtration</Label>
-                        <Input
-                            id="filtration"
-                            value={formData.filtration}
-                            onChange={(e) => setFormData({ ...formData, filtration: e.target.value })}
-                            placeholder="e.g., Non-chill filtered"
-                            data-testid="input-product-filtration"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <Label htmlFor="filtration">Filtration</Label>
+            <Input
+              id="filtration"
+              value={formData.filtration}
+              onChange={(e) => setFormData({ ...formData, filtration: e.target.value })}
+              placeholder="e.g., Non-chill filtered"
+              data-testid="input-product-filtration"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="appearance">Appearance</Label>
-                        <Textarea
-                            id="appearance"
-                            value={formData.appearance}
-                            onChange={(e) => setFormData({ ...formData, appearance: e.target.value })}
-                            placeholder="Color and visual characteristics..."
-                            data-testid="textarea-product-appearance"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="appearance">Appearance</Label>
+            <Textarea
+              id="appearance"
+              value={formData.appearance}
+              onChange={(e) => setFormData({ ...formData, appearance: e.target.value })}
+              placeholder="Color and visual characteristics..."
+              data-testid="textarea-product-appearance"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="product-description">Description</Label>
-                        <Textarea
-                            id="product-description"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="General description of the whisky..."
-                            data-testid="textarea-product-description"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="product-description">Description</Label>
+            <Textarea
+              id="product-description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="General description of the whisky..."
+              data-testid="textarea-product-description"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="tasting-nose">Tasting Notes - Nose</Label>
-                        <Textarea
-                            id="tasting-nose"
-                            value={formData.tastingNose}
-                            onChange={(e) => setFormData({ ...formData, tastingNose: e.target.value })}
-                            placeholder="Aromas and scents detected on the nose..."
-                            data-testid="textarea-product-tasting-nose"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-nose">Tasting Notes - Nose</Label>
+            <Textarea
+              id="tasting-nose"
+              value={formData.tastingNose}
+              onChange={(e) => setFormData({ ...formData, tastingNose: e.target.value })}
+              placeholder="Aromas and scents detected on the nose..."
+              data-testid="textarea-product-tasting-nose"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="tasting-taste">Tasting Notes - Taste</Label>
-                        <Textarea
-                            id="tasting-taste"
-                            value={formData.tastingTaste}
-                            onChange={(e) => setFormData({ ...formData, tastingTaste: e.target.value })}
-                            placeholder="Flavors experienced on the palate..."
-                            data-testid="textarea-product-tasting-taste"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-taste">Tasting Notes - Taste</Label>
+            <Textarea
+              id="tasting-taste"
+              value={formData.tastingTaste}
+              onChange={(e) => setFormData({ ...formData, tastingTaste: e.target.value })}
+              placeholder="Flavors experienced on the palate..."
+              data-testid="textarea-product-tasting-taste"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="tasting-finish">Tasting Notes - Finish</Label>
-                        <Textarea
-                            id="tasting-finish"
-                            value={formData.tastingFinish}
-                            onChange={(e) => setFormData({ ...formData, tastingFinish: e.target.value })}
-                            placeholder="Aftertaste and finish characteristics..."
-                            data-testid="textarea-product-tasting-finish"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="tasting-finish">Tasting Notes - Finish</Label>
+            <Textarea
+              id="tasting-finish"
+              value={formData.tastingFinish}
+              onChange={(e) => setFormData({ ...formData, tastingFinish: e.target.value })}
+              placeholder="Aftertaste and finish characteristics..."
+              data-testid="textarea-product-tasting-finish"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="product-url">Product URL</Label>
-                        <Input
-                            id="product-url"
-                            type="url"
-                            value={formData.productUrl}
-                            onChange={(e) => setFormData({ ...formData, productUrl: e.target.value })}
-                            placeholder="https://example.com/product"
-                            data-testid="input-product-url"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="product-url">Product URL</Label>
+            <Input
+              id="product-url"
+              type="url"
+              value={formData.productUrl}
+              onChange={(e) => setFormData({ ...formData, productUrl: e.target.value })}
+              placeholder="https://example.com/product"
+              data-testid="input-product-url"
+            />
+          </div>
 
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="product-image">Product Image URL</Label>
-                        <Input
-                            id="product-image"
-                            type="url"
-                            value={formData.productImage}
-                            onChange={(e) => setFormData({ ...formData, productImage: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                            data-testid="input-product-image"
-                        />
-                    </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="product-image">Product Image URL</Label>
+            <Input
+              id="product-image"
+              type="url"
+              value={formData.productImage}
+              onChange={(e) => setFormData({ ...formData, productImage: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+              data-testid="input-product-image"
+            />
+          </div>
 
-                    <div className="md:col-span-2 flex space-x-3">
-                        <Button
-                            type="submit"
-                            disabled={createMutation.isPending}
-                            className="bg-amber-500 hover:bg-amber-600"
-                            data-testid="button-submit-product"
-                        >
-                            {createMutation.isPending ? "Creating..." : "Create Product"}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onSuccess}
-                            data-testid="button-cancel-product"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    );
+          <div className="md:col-span-2 flex space-x-3">
+            <Button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="bg-amber-500 hover:bg-amber-600"
+              data-testid="button-submit-product"
+            >
+              {createMutation.isPending ? "Creating..." : "Create Product"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSuccess}
+              data-testid="button-cancel-product"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function UsersManager({ users, isLoading }: { users: User[], isLoading: boolean }) {
-    const { toast } = useToast();
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { toast } = useToast();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // Toggle admin status mutation
-    const toggleAdminMutation = useMutation({
-        mutationFn: async ({ userId, isAdmin }: { userId: string, isAdmin: boolean }) => {
-            return await apiRequest(`/api/admin/users/${userId}/admin-status`, {
-                method: "PATCH",
-                body: { isAdmin }
-            });
-        },
-        onSuccess: () => {
-            toast({
-                title: "Success",
-                description: "User admin status updated successfully",
-            });
-            queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to update user admin status",
-                variant: "destructive",
-            });
-        },
-    });
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
 
-    // Delete user mutation
-    const deleteUserMutation = useMutation({
-        mutationFn: async (userId: string) => {
-            return await apiRequest(`/api/admin/users/${userId}`, {
-                method: "DELETE"
-            });
-        },
-        onSuccess: () => {
-            toast({
-                title: "Success",
-                description: "User deleted successfully",
-            });
-            setShowDeleteDialog(false);
-            setSelectedUser(null);
-            queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to delete user",
-                variant: "destructive",
-            });
-        },
-    });
+  const toggleAll = () => {
+    if (selectedIds.size === users.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(users.map(u => u.id)));
+    }
+  };
 
-    const handleToggleAdmin = (user: User) => {
-        toggleAdminMutation.mutate({ userId: user.id, isAdmin: !user.isAdmin });
-    };
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return await apiRequest("/api/admin/users/bulk", {
+        method: "DELETE",
+        body: { ids }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Selected users deleted successfully",
+      });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete users",
+        variant: "destructive",
+      });
+    },
+  });
 
-    const handleDeleteUser = (user: User) => {
-        setSelectedUser(user);
-        setShowDeleteDialog(true);
-    };
+  // Toggle admin status mutation
+  const toggleAdminMutation = useMutation({
+    mutationFn: async ({ userId, isAdmin }: { userId: string, isAdmin: boolean }) => {
+      return await apiRequest(`/api/admin/users/${userId}/admin-status`, {
+        method: "PATCH",
+        body: { isAdmin }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User admin status updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user admin status",
+        variant: "destructive",
+      });
+    },
+  });
 
-    const confirmDelete = () => {
-        if (selectedUser) {
-            deleteUserMutation.mutate(selectedUser.id);
-        }
-    };
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}`, {
+        method: "DELETE"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      setSelectedUser(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-playfair font-bold text-slate-800">User Management</h2>
-                    <p className="text-slate-600">Manage user accounts and permissions</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {users.length} Total Users
-                    </Badge>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        {users.filter(u => u.isAdmin).length} Admins
-                    </Badge>
-                </div>
-            </div>
+  const handleToggleAdmin = (user: User) => {
+    toggleAdminMutation.mutate({ userId: user.id, isAdmin: !user.isAdmin });
+  };
 
-            {/* Users List */}
-            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
-                <CardContent className="p-0">
-                    {isLoading ? (
-                        <div className="space-y-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex items-center space-x-4 p-6 border-b border-slate-100 animate-pulse">
-                                    <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 bg-slate-200 rounded w-1/4"></div>
-                                        <div className="h-3 bg-slate-200 rounded w-1/3"></div>
-                                    </div>
-                                    <div className="w-20 h-6 bg-slate-200 rounded"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : users.length > 0 ? (
-                        <div className="space-y-0">
-                            {users
-                                .sort((a, b) => a.id.localeCompare(b.id))
-                                .map((user, index) => (
-                                    <div
-                                        key={user.id}
-                                        className={`flex items-center justify-between p-6 hover:bg-amber-50/50 transition-colors group ${index !== users.length - 1 ? 'border-b border-slate-100' : ''
-                                            }`}
-                                        data-testid={`row-user-${user.id}`}
-                                    >
-                                        <div className="flex items-center space-x-4 flex-1">
-                                            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                                                <Users className="h-4 w-4 text-amber-600" />
-                                            </div>
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user);
+    setShowDeleteDialog(true);
+  };
 
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center space-x-3">
-                                                    <h3 className="font-semibold text-slate-800" data-testid={`text-user-username-${user.id}`}>
-                                                        {user.username}
-                                                    </h3>
-                                                    {user.isAdmin && (
-                                                        <Badge className="bg-amber-100 text-amber-800 border-amber-200" data-testid={`badge-admin-${user.id}`}>
-                                                            <Shield className="h-3 w-3 mr-1" />
-                                                            Admin
-                                                        </Badge>
-                                                    )}
-                                                </div>
+  const confirmDelete = () => {
+    if (selectedUser) {
+      deleteUserMutation.mutate(selectedUser.id);
+    }
+  };
 
-                                                <div className="mt-1 space-y-1">
-                                                    <p className="text-slate-600 text-sm" data-testid={`text-user-email-${user.id}`}>
-                                                        {user.email}
-                                                    </p>
-                                                    <div className="flex items-center space-x-4 text-xs text-slate-500">
-                                                        <span>ID: {user.id}</span>
-                                                        <span>•</span>
-                                                        <span>Joined {new Date(user.createdAt!).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center space-x-2 ml-4">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleToggleAdmin(user)}
-                                                disabled={toggleAdminMutation.isPending}
-                                                className={user.isAdmin ? "border-red-200 text-red-700 hover:bg-red-50" : "border-green-200 text-green-700 hover:bg-green-50"}
-                                                data-testid={`button-toggle-admin-${user.id}`}
-                                            >
-                                                {user.isAdmin ? (
-                                                    <>
-                                                        <ShieldOff className="h-4 w-4 mr-1" />
-                                                        Remove Admin
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Shield className="h-4 w-4 mr-1" />
-                                                        Make Admin
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleDeleteUser(user)}
-                                                disabled={deleteUserMutation.isPending}
-                                                className="border-red-200 text-red-700 hover:bg-red-50"
-                                                data-testid={`button-delete-user-${user.id}`}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-1" />
-                                                Delete
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-slate-600 mb-2">No Users Found</h3>
-                            <p className="text-slate-500">Users will appear here when they sign up</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete User</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete user "{selectedUser?.username}"? This action cannot be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowDeleteDialog(false)}
-                            data-testid="button-cancel-delete"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={confirmDelete}
-                            disabled={deleteUserMutation.isPending}
-                            data-testid="button-confirm-delete"
-                        >
-                            {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-playfair font-bold text-slate-800">User Management</h2>
+          <p className="text-slate-600">Manage user accounts and permissions</p>
         </div>
-    );
+        <div className="flex items-center space-x-4">
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            {users.length} Total Users
+          </Badge>
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+            {users.filter(u => u.isAdmin).length} Admins
+          </Badge>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      <div className="flex justify-end space-x-3">
+        {selectedIds.size > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete ({selectedIds.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete {selectedIds.size} users. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+
+      {/* Users List */}
+      <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-0">
+        <CardHeader className="p-4 border-b border-slate-100 flex flex-row items-center space-x-4">
+          <Checkbox
+            checked={users.length > 0 && selectedIds.size === users.length}
+            onCheckedChange={toggleAll}
+            className="border-slate-300 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+          />
+          <span className="text-sm font-medium text-slate-600">Select All</span>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="space-y-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-6 border-b border-slate-100 animate-pulse">
+                  <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                  </div>
+                  <div className="w-20 h-6 bg-slate-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : users.length > 0 ? (
+            <div className="space-y-0">
+              {users
+                .sort((a, b) => a.id.localeCompare(b.id))
+                .map((user, index) => (
+                  <div
+                    key={user.id}
+                    className={`flex items-center justify-between p-6 hover:bg-amber-50/50 transition-colors group ${index !== users.length - 1 ? 'border-b border-slate-100' : ''
+                      }`}
+                    data-testid={`row-user-${user.id}`}
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      <Checkbox
+                        checked={selectedIds.has(user.id)}
+                        onCheckedChange={() => toggleSelection(user.id)}
+                        className="border-slate-300 data-[state=checked]:bg-amber-600 data-[state=checked]:text-white"
+                      />
+                      <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                        <Users className="h-4 w-4 text-amber-600" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <h3 className="font-semibold text-slate-800" data-testid={`text-user-username-${user.id}`}>
+                            {user.username}
+                          </h3>
+                          {user.isAdmin && (
+                            <Badge className="bg-amber-100 text-amber-800 border-amber-200" data-testid={`badge-admin-${user.id}`}>
+                              <Shield className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="mt-1 space-y-1">
+                          <p className="text-slate-600 text-sm" data-testid={`text-user-email-${user.id}`}>
+                            {user.email}
+                          </p>
+                          <div className="flex items-center space-x-4 text-xs text-slate-500">
+                            <span>ID: {user.id}</span>
+                            <span>•</span>
+                            <span>Joined {new Date(user.createdAt!).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleAdmin(user)}
+                        disabled={toggleAdminMutation.isPending}
+                        className={user.isAdmin ? "border-red-200 text-red-700 hover:bg-red-50" : "border-green-200 text-green-700 hover:bg-green-50"}
+                        data-testid={`button-toggle-admin-${user.id}`}
+                      >
+                        {user.isAdmin ? (
+                          <>
+                            <ShieldOff className="h-4 w-4 mr-1" />
+                            Remove Admin
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="h-4 w-4 mr-1" />
+                            Make Admin
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={deleteUserMutation.isPending}
+                        className="border-red-200 text-red-700 hover:bg-red-50"
+                        data-testid={`button-delete-user-${user.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No Users Found</h3>
+              <p className="text-slate-500">Users will appear here when they sign up</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete user "{selectedUser?.username}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteUserMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

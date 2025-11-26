@@ -723,6 +723,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/users/bulk", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ message: "ids must be an array" });
+      }
+
+      // Prevent self-deletion
+      if (req.session.userId && ids.includes(req.session.userId)) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      await storage.bulkDeleteUsers(ids);
+      res.json({ message: "Users deleted successfully" });
+    } catch (error) {
+      console.error("Bulk delete users error:", error);
+      res.status(500).json({ message: "Failed to delete users" });
+    }
+  });
+
+  app.delete("/api/admin/distilleries", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ message: "ids must be an array" });
+      }
+      await storage.bulkDeleteDistilleries(ids);
+      res.json({ message: "Distilleries deleted successfully" });
+    } catch (error) {
+      console.error("Bulk delete distilleries error:", error);
+      res.status(500).json({ message: "Failed to delete distilleries" });
+    }
+  });
+
+  app.delete("/api/admin/products", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ message: "ids must be an array" });
+      }
+      await storage.bulkDeleteProducts(ids);
+      res.json({ message: "Products deleted successfully" });
+    } catch (error) {
+      console.error("Bulk delete products error:", error);
+      res.status(500).json({ message: "Failed to delete products" });
+    }
+  });
+
   // Import whiskies from TheWhiskyEdition API
   app.post("/api/admin/import-whiskies", requireAdmin, async (req, res) => {
     console.log("[Import] Starting TheWhiskyEdition API import");
