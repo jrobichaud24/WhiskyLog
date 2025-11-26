@@ -282,8 +282,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/featured", async (req, res) => {
     try {
       const products = await storage.getProducts();
+      // Shuffle array to get random products
+      const shuffled = [...products].sort(() => 0.5 - Math.random());
       // Return first 6 products for featured section
-      res.json(products.slice(0, 6));
+      res.json(shuffled.slice(0, 6));
     } catch (error) {
       console.error("Get featured products error:", error);
       res.status(500).json({ message: "Failed to fetch featured products" });
@@ -702,6 +704,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/users/bulk", requireAdmin, async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ message: "ids must be an array" });
+      }
+
+      // Prevent self-deletion
+      if (req.session.userId && ids.includes(req.session.userId)) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      await storage.bulkDeleteUsers(ids);
+      res.json({ message: "Users deleted successfully" });
+    } catch (error) {
+      console.error("Bulk delete users error:", error);
+      res.status(500).json({ message: "Failed to delete users" });
+    }
+  });
+
   app.delete("/api/admin/users/:userId", requireAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
@@ -720,26 +742,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete user error:", error);
       res.status(500).json({ message: "Failed to delete user" });
-    }
-  });
-
-  app.delete("/api/admin/users/bulk", requireAdmin, async (req, res) => {
-    try {
-      const { ids } = req.body;
-      if (!Array.isArray(ids)) {
-        return res.status(400).json({ message: "ids must be an array" });
-      }
-
-      // Prevent self-deletion
-      if (req.session.userId && ids.includes(req.session.userId)) {
-        return res.status(400).json({ message: "Cannot delete your own account" });
-      }
-
-      await storage.bulkDeleteUsers(ids);
-      res.json({ message: "Users deleted successfully" });
-    } catch (error) {
-      console.error("Bulk delete users error:", error);
-      res.status(500).json({ message: "Failed to delete users" });
     }
   });
 

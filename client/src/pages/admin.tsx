@@ -715,6 +715,14 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [apiImportStats, setApiImportStats] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [filterDistillery, setFilterDistillery] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [filterCountry, setFilterCountry] = useState<string>("all");
+
+  // Compute unique values for filters
+  const uniqueDistilleries = Array.from(new Set(distilleries.map(d => d.name))).sort();
+  const uniqueRegions = Array.from(new Set(distilleries.map(d => d.region))).sort();
+  const uniqueCountries = Array.from(new Set(distilleries.map(d => d.country))).sort();
 
   const toggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -926,8 +934,20 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
     return distillery?.name || "Unknown Distillery";
   };
 
+  // Filter products
+  const filteredProducts = products.filter(product => {
+    const distillery = distilleries.find(d => d.id === product.distillery);
+    if (!distillery) return false;
+
+    const matchesDistillery = filterDistillery === "all" || distillery.name === filterDistillery;
+    const matchesRegion = filterRegion === "all" || distillery.region === filterRegion;
+    const matchesCountry = filterCountry === "all" || distillery.country === filterCountry;
+
+    return matchesDistillery && matchesRegion && matchesCountry;
+  });
+
   // Sort products by distillery name, then by product name
-  const sortedProducts = [...products].sort((a, b) => {
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     const distilleryA = getDistilleryName(a.distillery);
     const distilleryB = getDistilleryName(b.distillery);
 
@@ -1218,6 +1238,98 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
       {showAddForm && (
         <AddProductForm distilleries={distilleries} onSuccess={() => setShowAddForm(false)} />
       )}
+
+      {/* Filter Controls */}
+      <Card className="bg-white/90 backdrop-blur-sm border-amber-100 mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-amber-600" />
+            <CardTitle className="text-lg text-slate-800">Filter Products</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="distillery-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Distillery
+              </Label>
+              <Select value={filterDistillery} onValueChange={setFilterDistillery}>
+                <SelectTrigger data-testid="select-distillery-filter">
+                  <SelectValue placeholder="All Distilleries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Distilleries</SelectItem>
+                  {uniqueDistilleries.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="region-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Region
+              </Label>
+              <Select value={filterRegion} onValueChange={setFilterRegion}>
+                <SelectTrigger data-testid="select-region-filter">
+                  <SelectValue placeholder="All Regions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  {uniqueRegions.map((region) => (
+                    <SelectItem key={region} value={region}>
+                      {region}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="country-filter" className="text-sm font-medium text-slate-700 mb-2 block">
+                Country
+              </Label>
+              <Select value={filterCountry} onValueChange={setFilterCountry}>
+                <SelectTrigger data-testid="select-country-filter">
+                  <SelectValue placeholder="All Countries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {uniqueCountries.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Filter Results Summary */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-200">
+            <div className="text-sm text-slate-600">
+              Showing {filteredProducts.length} of {products.length} products
+            </div>
+            {(filterDistillery !== "all" || filterRegion !== "all" || filterCountry !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterDistillery("all");
+                  setFilterRegion("all");
+                  setFilterCountry("all");
+                }}
+                className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                data-testid="button-clear-filters"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Products List */}
       <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-amber-100">
