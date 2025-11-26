@@ -290,33 +290,35 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           <p className="text-slate-600">Manage the master list of Scottish distilleries ({distilleries.length} total)</p>
         </div>
         <div className="flex space-x-3">
-          {selectedIds.size > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete ({selectedIds.size})
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete {selectedIds.size} distilleries. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="bg-red-500 hover:bg-red-600 text-white"
+                disabled={selectedIds.size === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete ({selectedIds.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete {selectedIds.size} distilleries. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button
             variant="outline"
             onClick={() => setShowBulkImport(!showBulkImport)}
@@ -1022,33 +1024,35 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
           <p className="text-slate-600">Manage whisky products from all distilleries</p>
         </div>
         <div className="flex space-x-3">
-          {selectedIds.size > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete ({selectedIds.size})
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete {selectedIds.size} products. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="bg-red-500 hover:bg-red-600 text-white"
+                disabled={selectedIds.size === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete ({selectedIds.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete {selectedIds.size} products. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button
             variant="outline"
             onClick={() => setShowBulkImport(!showBulkImport)}
@@ -1902,33 +1906,35 @@ function UsersManager({ users, isLoading }: { users: User[], isLoading: boolean 
 
       {/* Bulk Actions */}
       <div className="flex justify-end space-x-3">
-        {selectedIds.size > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="bg-red-500 hover:bg-red-600 text-white">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete ({selectedIds.size})
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete {selectedIds.size} users. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
-                  className="bg-red-500 hover:bg-red-600"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="destructive"
+              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={selectedIds.size === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete ({selectedIds.size})
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {selectedIds.size} users. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Users List */}
