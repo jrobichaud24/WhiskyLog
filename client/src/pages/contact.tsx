@@ -23,7 +23,7 @@ type ContactFormValues = z.infer<typeof contactFormSchema>;
 export default function Contact() {
   const { toast } = useToast();
   const [honeypot, setHoneypot] = useState("");
-  
+
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
@@ -59,22 +59,22 @@ export default function Contact() {
           _captcha: false
         })
       });
-      
+
       const result = await response.json();
-      
-      if (result.success === "true" || response.ok) {
+
+      if (result.success === "true") {
         toast({
           title: "Message sent!",
           description: "Thank you for contacting us. We'll get back to you soon.",
         });
         form.reset();
       } else {
-        throw new Error('Failed to send message');
+        throw new Error(result.message || 'Failed to send message');
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again or email us directly at thedramjournal@outlook.com",
+        description: error instanceof Error ? error.message : "Failed to send message. Please try again or email us directly at thedramjournal@outlook.com",
         variant: "destructive",
       });
     }
@@ -83,7 +83,7 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-warmwhite">
       <Navigation />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
           <h1 className="font-playfair text-4xl md:text-5xl font-bold text-gray-900 mb-4" data-testid="heading-contact">
@@ -111,9 +111,9 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Your name" 
-                          {...field} 
+                        <Input
+                          placeholder="Your name"
+                          {...field}
                           data-testid="input-contact-name"
                         />
                       </FormControl>
@@ -129,10 +129,10 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="email"
-                          placeholder="your.email@example.com" 
-                          {...field} 
+                          placeholder="your.email@example.com"
+                          {...field}
                           data-testid="input-contact-email"
                         />
                       </FormControl>
@@ -148,9 +148,9 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Subject</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="What is this regarding?" 
-                          {...field} 
+                        <Input
+                          placeholder="What is this regarding?"
+                          {...field}
                           data-testid="input-contact-subject"
                         />
                       </FormControl>
@@ -166,7 +166,7 @@ export default function Contact() {
                     <FormItem>
                       <FormLabel>Message</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="Tell us more about your inquiry..."
                           className="min-h-[150px]"
                           {...field}
@@ -193,8 +193,8 @@ export default function Contact() {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   size="lg"
                   className="w-full"
                   disabled={form.formState.isSubmitting}
