@@ -1,0 +1,12 @@
+Found 11 users:
+- [df88318d-f608-4b9e-80b8-1ad473078ef1] XSDramJournal (jtrobic1@hotmail.ca) isAdmin=true
+- [dee9bcc5-a491-473c-aa17-65138c696893] jtrobic (jtrobic@hotmail.com) isAdmin=false
+- [acdb20ab-38a4-4606-8403-1bddef32b1af] testuser_1764099590243 (testuser_1764099590243@example.com) isAdmin=false
+- [3ef49555-96ed-446d-a657-3d1ba2e85e23] testuser_1764099691071 (testuser_1764099691071@example.com) isAdmin=false
+- [c803527f-bc3b-4363-a950-c40b4ed3a9a5] testuser_1764106002910 (testuser_1764106002910@example.com) isAdmin=false
+- [550ac358-d314-4ac0-ae18-a59b9f85247d] testuser_1764106083233 (testuser_1764106083233@example.com) isAdmin=false
+- [45e5f439-bd19-41be-8da8-bd95e432fabd] testuser_1764106160276 (testuser_1764106160276@example.com) isAdmin=false
+- [a10d0bf7-e960-490c-b9e1-2f6c368d38a2] testuser_1764106260372 (testuser_1764106260372@example.com) isAdmin=false
+- [8080defa-d769-4363-97fa-f46e3c6ceb38] testuser_1764106315912 (testuser_1764106315912@example.com) isAdmin=false
+- [20babdf2-dec9-475e-97f2-60c2099846f3] testuser_1764106375209 (testuser_1764106375209@example.com) isAdmin=false
+- [645147c4-ac56-47a4-b945-373023a4ad82] testuser_1764106403692 (testuser_1764106403692@example.com) isAdmin=false
