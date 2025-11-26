@@ -286,7 +286,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
       {/* Actions */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-playfair font-bold text-slate-800">Distilleries</h2>
+          <h2 className="text-2xl font-playfair font-bold text-slate-800">Distilleries <span className="text-red-500 text-sm">(DEBUG: UPDATED)</span></h2>
           <p className="text-slate-600">Manage the master list of Scottish distilleries ({distilleries.length} total)</p>
         </div>
         <div className="flex space-x-3">
