@@ -54,7 +54,7 @@ export const userProducts = pgTable("user_products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   productId: varchar("product_id").notNull().references(() => products.id),
-  rating: integer("rating"), // 1-5 scale
+  rating: integer("rating"), // 1-10 scale
   tastingNotes: text("tasting_notes"),
   owned: boolean("owned").default(false),
   wishlist: boolean("wishlist").default(false),
@@ -131,7 +131,7 @@ export const userBadges = pgTable("user_badges", {
 export const appReviews = pgTable("app_reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  rating: integer("rating").notNull(), // 1-5 stars
+  rating: integer("rating").notNull(), // 1-10 scale
   title: varchar("title", { length: 255 }).notNull(),
   comment: text("comment").notNull(),
   createdAt: timestamp("created_at").defaultNow(),

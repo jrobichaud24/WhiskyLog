@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import CameraCapture from "@/components/camera-capture";
-import { 
+import {
   ArrowLeft,
   LogOut,
   ExternalLink,
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
+import { getRatingLabel, getRatingColor } from "@/lib/rating-utils";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Collection() {
@@ -118,43 +119,43 @@ export default function Collection() {
       {/* Header */}
       <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
         {/* Background Pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         />
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4 w-full md:w-auto">
               <Button
                 variant="ghost"
                 onClick={() => setLocation("/dashboard")}
-                className="text-amber-200 hover:bg-amber-500/20 hover:text-white p-2"
+                className="text-amber-200 hover:bg-amber-500/20 hover:text-white p-2 shrink-0"
                 data-testid="button-back-dashboard"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
-                <img 
-                  src="/logo.png" 
-                  alt="The Dram Journal Logo" 
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2 shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="The Dram Journal Logo"
                   className="w-full h-full object-cover rounded-lg"
                 />
               </div>
-              <div>
-                <h1 className="font-playfair text-4xl font-bold text-white mb-1">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-playfair text-2xl md:text-4xl font-bold text-white mb-1 truncate">
                   Your Collection
                 </h1>
-                <p className="text-amber-200 text-lg">
-                  {collectionItems.length} whiskies in your collection, {user.firstName || user.username}
+                <p className="text-amber-200 text-sm md:text-lg truncate">
+                  {collectionItems.length} whiskies
                 </p>
               </div>
             </div>
             <Button
               variant="outline"
-              className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
+              className="w-full md:w-auto border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
               data-testid="button-logout"
@@ -167,7 +168,7 @@ export default function Collection() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {collectionItems.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-amber-100 rounded-full mx-auto mb-6 flex items-center justify-center">
@@ -178,8 +179,8 @@ export default function Collection() {
               Start building your whisky collection by browsing and rating whiskies, or scan a bottle with your camera.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
+              <Button
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
                 onClick={() => setLocation("/browse")}
                 data-testid="button-start-collection"
               >
@@ -191,20 +192,23 @@ export default function Collection() {
         ) : (
           <div className="space-y-6">
             {/* Action buttons for existing collection */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h2 className="text-2xl font-bold text-slate-800 font-playfair">Your Collection</h2>
-              <div className="flex gap-3">
-                <Button 
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button
                   variant="outline"
                   onClick={() => setLocation("/browse")}
                   data-testid="button-browse-more"
+                  className="flex-1 sm:flex-none"
                 >
                   Browse More
                 </Button>
-                <CameraCapture onWhiskyAdded={() => queryClient.invalidateQueries({ queryKey: ["/api/user-products"] })} />
+                <div className="flex-1 sm:flex-none">
+                  <CameraCapture onWhiskyAdded={() => queryClient.invalidateQueries({ queryKey: ["/api/user-products"] })} />
+                </div>
               </div>
             </div>
-            
+
             {collectionItems.map(({ userProduct, product, distillery }) => (
               <Card key={userProduct.id} className="bg-white/90 backdrop-blur-sm shadow-xl border-0 hover:shadow-2xl transition-shadow">
                 <CardContent className="p-6">
@@ -213,8 +217,8 @@ export default function Collection() {
                     <div className="lg:col-span-1">
                       <div className="w-full h-32 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl overflow-hidden shadow-inner">
                         {product?.productImage ? (
-                          <img 
-                            src={product.productImage} 
+                          <img
+                            src={product.productImage}
                             alt={`${product.name} bottle`}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -257,7 +261,7 @@ export default function Collection() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex flex-wrap gap-3 text-sm">
                         {product?.abvPercent && (
                           <div className="flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full">
@@ -271,9 +275,9 @@ export default function Collection() {
                           </div>
                         )}
                         {product?.productUrl && (
-                          <a 
-                            href={product.productUrl} 
-                            target="_blank" 
+                          <a
+                            href={product.productUrl}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors"
                           >
@@ -294,23 +298,14 @@ export default function Collection() {
                     <div className="lg:col-span-1 space-y-3">
                       <div className="text-center">
                         <p className="text-sm text-slate-600 mb-2">Your Rating</p>
-                        <div className="flex justify-center space-x-1 mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-5 w-5 ${
-                                i < (userProduct.rating || 0)
-                                  ? "text-amber-400 fill-amber-400"
-                                  : "text-slate-300"
-                              }`}
-                            />
-                          ))}
+                        <div className={`text-3xl font-bold mb-1 ${getRatingColor(userProduct.rating || 0)}`}>
+                          {userProduct.rating || 0}<span className="text-lg text-slate-400 font-normal">/10</span>
                         </div>
-                        <div className="text-lg font-semibold text-slate-800">
-                          {userProduct.rating || 0}/5
+                        <div className="text-sm font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded-full inline-block">
+                          {getRatingLabel(userProduct.rating || 0)}
                         </div>
                       </div>
-                      
+
                       {userProduct.tastingNotes && (
                         <div>
                           <p className="text-sm text-slate-600 mb-1">Your Notes</p>

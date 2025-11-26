@@ -79,15 +79,7 @@ export default function FeaturedWhiskies() {
                 </div>
                 <div className="text-center">
                   <div className="flex justify-center mb-2">
-                    <div className="flex text-amber-400">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className="w-4 h-4 fill-current"
-                          data-testid={`star-${product.id}-${star}`}
-                        />
-                      ))}
-                    </div>
+                    {/* Rating removed as it was static */}
                   </div>
                   <p className="font-playfair font-semibold text-gray-800 text-sm" data-testid={`text-product-name-${product.id}`}>
                     {product.name}

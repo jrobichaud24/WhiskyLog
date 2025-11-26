@@ -13,10 +13,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  Search, 
-  Filter, 
-  X, 
+import {
+  Search,
+  Filter,
+  X,
   ArrowLeft,
   LogOut,
   ExternalLink,
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
+import { getRatingLabel } from "@/lib/rating-utils";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Browse() {
@@ -42,7 +43,7 @@ export default function Browse() {
   const [hoverRating, setHoverRating] = useState(0);
   const [tastingNotes, setTastingNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   const { user, isLoading: userLoading } = useAuth();
 
   // Search and filter state
@@ -84,7 +85,7 @@ export default function Browse() {
   // Filter products based on search criteria
   const filteredProducts = products.filter(product => {
     const distillery = product.distillery ? distilleryMap[product.distillery] : null;
-    
+
     // Search term filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -166,7 +167,7 @@ export default function Browse() {
   const toggleWishlistMutation = useMutation({
     mutationFn: async (productId: string) => {
       const userProduct = (userProducts as any[]).find((up: any) => up.productId === productId);
-      
+
       if (userProduct && userProduct.wishlist) {
         // Remove from wishlist
         return await apiRequest(`/api/user-products/${userProduct.id}`, {
@@ -190,7 +191,7 @@ export default function Browse() {
     onSuccess: (_, productId) => {
       const product = products?.find((p: Product) => p.id === productId);
       const wasInWishlist = isInWishlist(productId);
-      
+
       toast({
         title: wasInWishlist ? "Removed from Wishlist" : "Added to Wishlist",
         description: `${product?.name} has been ${wasInWishlist ? "removed from" : "added to"} your wishlist!`,
@@ -222,7 +223,7 @@ export default function Browse() {
       if (!userProduct) {
         throw new Error("Product not found in collection");
       }
-      
+
       return await apiRequest(`/api/user-products/${userProduct.id}`, {
         method: "DELETE"
       });
@@ -261,7 +262,7 @@ export default function Browse() {
       });
       return;
     }
-    
+
     addToCollectionMutation.mutate({
       productId: selectedProduct.id,
       rating,
@@ -296,9 +297,9 @@ export default function Browse() {
       <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-lg overflow-hidden mx-auto mb-4">
-            <img 
-              src="/logo.png" 
-              alt="The Dram Journal Logo" 
+            <img
+              src="/logo.png"
+              alt="The Dram Journal Logo"
               className="w-full h-full object-cover"
             />
           </div>
@@ -313,13 +314,13 @@ export default function Browse() {
       {/* Personal Header - same style as dashboard */}
       <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
         {/* Background Pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -332,9 +333,9 @@ export default function Browse() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
-                <img 
-                  src="/logo.png" 
-                  alt="The Dram Journal Logo" 
+                <img
+                  src="/logo.png"
+                  alt="The Dram Journal Logo"
                   className="w-full h-full object-cover rounded-lg"
                 />
               </div>
@@ -348,8 +349,8 @@ export default function Browse() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button 
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0" 
+              <Button
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
                 onClick={() => {
                   toast({
                     title: "Add Whisky",
@@ -361,7 +362,7 @@ export default function Browse() {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Whisky to Collection
               </Button>
-              
+
               <Button
                 variant="outline"
                 className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
@@ -491,8 +492,8 @@ export default function Browse() {
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
               <p className="text-gray-600 mb-4">
-                {hasActiveFilters 
-                  ? "Try adjusting your filters to find more whiskies." 
+                {hasActiveFilters
+                  ? "Try adjusting your filters to find more whiskies."
                   : "No whiskies are currently available in the collection."
                 }
               </p>
@@ -511,10 +512,10 @@ export default function Browse() {
           <div className="space-y-4">
             {filteredProducts.map((product) => {
               const distillery = product.distillery ? distilleryMap[product.distillery] : null;
-              
+
               return (
-                <Card 
-                  key={product.id} 
+                <Card
+                  key={product.id}
                   className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
                   data-testid={`card-product-${product.id}`}
                 >
@@ -524,8 +525,8 @@ export default function Browse() {
                       <div className="lg:col-span-2">
                         <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
                           {product.productImage ? (
-                            <img 
-                              src={product.productImage} 
+                            <img
+                              src={product.productImage}
                               alt={`${product.name} bottle`}
                               className="w-full h-full object-cover transition-transform group-hover:scale-105"
                               onError={(e) => {
@@ -589,7 +590,7 @@ export default function Browse() {
                             {product.description}
                           </p>
                         )}
-                        
+
                         {/* Condensed Tasting Notes */}
                         {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
                           <div className="space-y-1">
@@ -616,51 +617,48 @@ export default function Browse() {
                       <div className="lg:col-span-1 flex flex-col gap-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
+                            <Button
                               size="sm"
                               onClick={() => handleToggleWishlist(product.id)}
                               disabled={isInCollection(product.id)}
                               variant="outline"
-                              className={`border-2 w-8 h-8 p-0 ${
-                                isInCollection(product.id)
+                              className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
                                   ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
                                   : isInWishlist(product.id)
-                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
-                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
-                              }`}
+                                    ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
+                                    : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                                }`}
                               data-testid={`button-toggle-wishlist-${product.id}`}
                             >
-                              <Heart 
-                                className={`h-4 w-4 ${
-                                  isInWishlist(product.id) 
-                                    ? "fill-green-600 font-bold stroke-2" 
+                              <Heart
+                                className={`h-4 w-4 ${isInWishlist(product.id)
+                                    ? "fill-green-600 font-bold stroke-2"
                                     : ""
-                                }`} 
+                                  }`}
                               />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>
-                              {isInCollection(product.id) 
+                              {isInCollection(product.id)
                                 ? "Already in collection"
-                                : isInWishlist(product.id) 
-                                ? "Remove from wishlist" 
-                                : "Add to wishlist"
+                                : isInWishlist(product.id)
+                                  ? "Remove from wishlist"
+                                  : "Add to wishlist"
                               }
                             </p>
                           </TooltipContent>
                         </Tooltip>
-                        
+
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
+                            <Button
                               size="sm"
                               onClick={() => handleToggleCollection(product.id)}
-                              className={`w-8 h-8 p-0 shadow-lg border-0 ${
-                                isInCollection(product.id)
+                              className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
                                   ? "bg-green-500 hover:bg-green-600 text-white"
                                   : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                              }`}
+                                }`}
                               data-testid={`button-toggle-collection-${product.id}`}
                             >
                               {isInCollection(product.id) ? (
@@ -674,7 +672,7 @@ export default function Browse() {
                             <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
                           </TooltipContent>
                         </Tooltip>
-                        
+
                         {product.productUrl && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -714,34 +712,36 @@ export default function Browse() {
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             {/* Rating Section */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Your Rating *</Label>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    className="p-1 hover:scale-110 transition-transform"
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setRating(star)}
-                    data-testid={`star-${star}`}
-                  >
-                    <Star
-                      className={`h-6 w-6 transition-colors ${
-                        star <= (hoverRating || rating)
-                          ? "fill-amber-400 text-amber-400"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  </button>
-                ))}
-                <span className="ml-2 text-sm text-gray-600">
-                  {rating > 0 ? `${rating}/5 stars` : "Click to rate"}
-                </span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-amber-600">{rating > 0 ? rating : "-"}</span>
+                  <span className={`text-sm font-medium px-3 py-1 rounded-full ${rating > 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"
+                    }`}>
+                    {getRatingLabel(rating)}
+                  </span>
+                </div>
+                <div className="relative pt-2 pb-6">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    value={rating || 5} // Default visual position to middle if 0
+                    onChange={(e) => setRating(parseInt(e.target.value))}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                    data-testid="slider-rating"
+                  />
+                  <div className="flex justify-between text-xs text-slate-400 mt-2 px-1">
+                    <span>1</span>
+                    <span>5</span>
+                    <span>10</span>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
+import { getRatingLabel } from "@/lib/rating-utils";
 
 import type { User, UserBadge } from "@shared/schema";
 
@@ -42,9 +43,9 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-lg overflow-hidden mx-auto mb-4">
-            <img 
-              src="/logo.png" 
-              alt="The Dram Journal Logo" 
+            <img
+              src="/logo.png"
+              alt="The Dram Journal Logo"
               className="w-full h-full object-cover"
             />
           </div>
@@ -58,7 +59,7 @@ export default function Dashboard() {
   const collectionWhiskies = (userProducts as any[]).filter((up: any) => up.owned);
   const whiskiesTriedCount = collectionWhiskies.length;
   const ratingsOnly = collectionWhiskies.filter((up: any) => up.rating && up.rating > 0);
-  const averageRating = ratingsOnly.length > 0 
+  const averageRating = ratingsOnly.length > 0
     ? (ratingsOnly.reduce((sum: number, up: any) => sum + up.rating, 0) / ratingsOnly.length).toFixed(1)
     : null;
   const wishlistCount = (userProducts as any[]).filter((up: any) => up.wishlist && !up.owned).length;
@@ -68,20 +69,20 @@ export default function Dashboard() {
       {/* Hero Header */}
       <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
         {/* Background Pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
-                <img 
-                  src="/logo.png" 
-                  alt="The Dram Journal Logo" 
+                <img
+                  src="/logo.png"
+                  alt="The Dram Journal Logo"
                   className="w-full h-full object-cover rounded-lg"
                 />
               </div>
@@ -95,14 +96,14 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button 
-                className="bg-amber-500 hover:bg-amber-600 text-white" 
+              <Button
+                className="bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => setLocation("/browse")}
                 data-testid="button-browse-whiskies"
               >
                 Browse Whiskies
               </Button>
-              
+
               <Button
                 className="bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => logoutMutation.mutate()}
@@ -131,24 +132,24 @@ export default function Dashboard() {
             <CardContent className="p-8">
               <div className="space-y-6">
                 <p className="text-slate-600 text-lg leading-relaxed">
-                  Welcome to your personal whisky sanctuary. Here you can track your tastings, 
+                  Welcome to your personal whisky sanctuary. Here you can track your tastings,
                   rate your favorite drams, and build your collection of exceptional single malts.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 px-6 py-3 text-lg" 
+                  <Button
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0 px-6 py-3 text-lg"
                     onClick={() => setLocation("/collection")}
                     data-testid="button-view-collection"
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
                     View Collection
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="border-2 border-green-200 text-green-700 hover:bg-green-50 px-6 py-3 text-lg" 
+                  <Button
+                    variant="outline"
+                    className="border-2 border-green-200 text-green-700 hover:bg-green-50 px-6 py-3 text-lg"
                     onClick={() => {
                       toast({
-                        title: "Coming Soon", 
+                        title: "Coming Soon",
                         description: "Wishlist view will be available soon. For now, you can see wishlisted items in the browse section.",
                       });
                     }}
@@ -174,26 +175,20 @@ export default function Dashboard() {
                   {whiskiesTriedCount}
                 </div>
               </div>
-              
+
               <div className="text-center space-y-2">
                 <span className="text-amber-200 text-sm font-medium">Average Rating</span>
-                <div className="flex items-center justify-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`h-5 w-5 ${
-                        averageRating && i < Math.floor(parseFloat(averageRating))
-                          ? "text-amber-400 fill-amber-400"
-                          : "text-slate-600"
-                      }`}
-                    />
-                  ))}
+                <div className="text-4xl font-bold text-white" data-testid="stat-average-rating">
+                  {averageRating ? averageRating : "-"}
+                  <span className="text-lg text-amber-200/70 font-normal">/10</span>
                 </div>
-                <div className="text-2xl font-semibold text-white" data-testid="stat-average-rating">
-                  {averageRating ? `${averageRating}/5` : "Not rated yet"}
-                </div>
+                {averageRating && (
+                  <div className="text-sm text-amber-200/80 mt-1">
+                    {getRatingLabel(Math.round(parseFloat(averageRating)))}
+                  </div>
+                )}
               </div>
-              
+
               <div className="text-center space-y-2">
                 <span className="text-amber-200 text-sm font-medium">Wishlist Items</span>
                 <div className="text-4xl font-bold text-white" data-testid="stat-wishlist-size">
@@ -212,9 +207,9 @@ export default function Dashboard() {
                 <Trophy className="h-6 w-6 mr-3 text-amber-600" />
                 Your Achievements
               </div>
-              <Button 
-                variant="outline" 
-                className="border-amber-300 text-amber-700 hover:bg-amber-100" 
+              <Button
+                variant="outline"
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
                 onClick={() => setLocation("/badges")}
                 data-testid="button-view-badges"
               >
@@ -241,8 +236,8 @@ export default function Dashboard() {
                 {userBadges.length > 0 ? (
                   <div className="space-y-2">
                     {userBadges.slice(0, 3).map((userBadge, index) => (
-                      <div 
-                        key={userBadge.id} 
+                      <div
+                        key={userBadge.id}
                         className="flex items-center space-x-3 bg-white p-3 rounded-lg border border-amber-200"
                         data-testid={`recent-badge-${index}`}
                       >

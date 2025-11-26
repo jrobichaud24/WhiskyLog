@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Star, MessageSquare, User, Calendar, Plus } from "lucide-react";
+import { MessageSquare, User, Calendar, Plus } from "lucide-react";
 import type { AppReview, User as UserType } from "@shared/schema";
 import Navigation from "@/components/navigation";
 import Footer from "@/components/footer";
+import { getRatingLabel, getRatingColor } from "@/lib/rating-utils";
 
 interface AppReviewWithUser extends AppReview {
   user?: {
@@ -26,7 +27,7 @@ export default function Reviews() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    rating: 5,
+    rating: 8,
     title: "",
     comment: "",
   });
@@ -35,8 +36,6 @@ export default function Reviews() {
     queryKey: ["/api/auth/user"],
     retry: false
   });
-
-
 
   const { data: reviews = [], isLoading, refetch } = useQuery<AppReviewWithUser[]>({
     queryKey: ["/api/reviews"],
@@ -55,7 +54,7 @@ export default function Reviews() {
         description: "Thank you for your feedback!",
       });
       setIsDialogOpen(false);
-      setFormData({ rating: 5, title: "", comment: "" });
+      setFormData({ rating: 8, title: "", comment: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/reviews"] });
     },
     onError: (error: Error) => {
@@ -80,41 +79,23 @@ export default function Reviews() {
     createReviewMutation.mutate(formData);
   };
 
-  const renderStars = (rating: number, interactive = false, onRate?: (rating: number) => void) => {
-    return (
-      <div className="flex space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-5 w-5 ${
-              star <= rating
-                ? "text-amber-400 fill-amber-400"
-                : "text-slate-300"
-            } ${interactive ? "cursor-pointer hover:text-amber-300" : ""}`}
-            onClick={interactive && onRate ? () => onRate(star) : undefined}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const averageRating = reviews.length > 0 
+  const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
     : "0.0";
 
   return (
     <div className="min-h-screen bg-warmwhite">
       <Navigation />
-      
+
       {/* Header */}
       <section className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white py-20">
-        <div 
+        <div
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-4" data-testid="heading-reviews">
             App <span className="text-amber-400">Reviews</span>
@@ -122,17 +103,17 @@ export default function Reviews() {
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8" data-testid="text-reviews-description">
             Share your experience and read what fellow whisky enthusiasts think about The Dram Journal
           </p>
-          
+
           <div className="flex items-center justify-center space-x-8 text-lg">
             <div className="text-center">
               <div className="flex items-center justify-center space-x-2 mb-1">
-                {renderStars(Math.round(parseFloat(averageRating)))}
-                <span className="font-semibold">{averageRating}</span>
+                <span className="text-3xl font-bold text-amber-400">{averageRating}</span>
+                <span className="text-slate-400">/10</span>
               </div>
               <p className="text-gray-300">Average Rating</p>
             </div>
             <div className="text-center">
-              <div className="font-bold text-2xl text-amber-400">{reviews.length}</div>
+              <div className="font-bold text-3xl text-amber-400">{reviews.length}</div>
               <p className="text-gray-300">Reviews</p>
             </div>
           </div>
@@ -149,9 +130,9 @@ export default function Reviews() {
               <p className="text-slate-600 mb-4">
                 Help other whisky enthusiasts by sharing your thoughts about The Dram Journal
               </p>
-              
-              <Dialog 
-                open={isDialogOpen} 
+
+              <Dialog
+                open={isDialogOpen}
                 onOpenChange={(open) => {
                   if (open && !userLoading && !user) {
                     toast({
@@ -168,7 +149,7 @@ export default function Reviews() {
                 }}
               >
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                     data-testid="button-write-review"
                   >
@@ -176,23 +157,34 @@ export default function Reviews() {
                     Write a Review
                   </Button>
                 </DialogTrigger>
-                
+
                 {user && (
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
                       <DialogTitle className="font-playfair text-2xl text-slate-800">Write Your Review</DialogTitle>
                     </DialogHeader>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Rating
+                          Rating: <span className="font-bold text-amber-600">{formData.rating}/10</span>
                         </label>
-                        {renderStars(formData.rating, true, (rating) => 
-                          setFormData(prev => ({ ...prev, rating }))
-                        )}
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            step="1"
+                            value={formData.rating}
+                            onChange={(e) => setFormData(prev => ({ ...prev, rating: parseInt(e.target.value) }))}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                          />
+                        </div>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {getRatingLabel(formData.rating)}
+                        </p>
                       </div>
-                      
+
                       <div>
                         <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
                           Review Title
@@ -207,7 +199,7 @@ export default function Reviews() {
                           data-testid="input-review-title"
                         />
                       </div>
-                      
+
                       <div>
                         <label htmlFor="comment" className="block text-sm font-medium text-slate-700 mb-2">
                           Your Review
@@ -222,7 +214,7 @@ export default function Reviews() {
                           data-testid="textarea-review-comment"
                         />
                       </div>
-                      
+
                       <div className="flex space-x-4">
                         <Button
                           type="submit"
@@ -252,7 +244,7 @@ export default function Reviews() {
         {/* Reviews List */}
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-slate-800 font-playfair">All Reviews</h2>
-          
+
           {isLoading ? (
             <div className="grid gap-6">
               {[1, 2, 3].map((i) => (
@@ -288,7 +280,7 @@ export default function Reviews() {
                           </div>
                           <div>
                             <p className="font-medium text-slate-800">
-                              {review.user?.firstName && review.user?.lastName 
+                              {review.user?.firstName && review.user?.lastName
                                 ? `${review.user.firstName} ${review.user.lastName}`
                                 : review.user?.username || 'Anonymous User'
                               }
@@ -300,14 +292,16 @@ export default function Reviews() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mb-3">
-                          {renderStars(review.rating)}
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                            {review.rating}/5
+                          <div className={`text-lg font-bold ${getRatingColor(review.rating)}`}>
+                            {review.rating}/10
+                          </div>
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                            {getRatingLabel(review.rating)}
                           </Badge>
                         </div>
                       </div>
                     </div>
-                    
+
                     <h3 className="font-semibold text-lg text-slate-800 mb-2">
                       {review.title}
                     </h3>
