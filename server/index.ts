@@ -25,20 +25,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Canonical domain redirect: force non-www to www
-app.use((req, res, next) => {
-  // Skip redirect for localhost, Render internal domains, and service worker
-  const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
-  const isRender = req.hostname.endsWith('.onrender.com');
-  const isWww = req.hostname.startsWith('www.');
-
-  if (!isLocalhost && !isRender && !isWww && req.path !== '/sw.js') {
-    // Use x-forwarded-proto if available (for proxies), otherwise fallback to req.protocol
-    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-    return res.redirect(301, `${protocol}://www.${req.hostname}${req.originalUrl}`);
-  }
-  next();
-});
+// Canonical domain redirect removed to prevent conflicts with platform-level redirects
+// app.use((req, res, next) => { ... });
 
 // Increase body size limit for image uploads (10MB for base64 encoded images)
 app.use(express.json({ limit: '10mb' }));
