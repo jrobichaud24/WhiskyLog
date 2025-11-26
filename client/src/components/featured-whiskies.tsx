@@ -8,8 +8,7 @@ import type { Product } from "@shared/schema";
 export default function FeaturedWhiskies() {
   const { data: products, isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/products/featured"],
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 60 * 1000, // Cache for 1 minute to prevent constant refreshing
   });
 
   if (isLoading) {
