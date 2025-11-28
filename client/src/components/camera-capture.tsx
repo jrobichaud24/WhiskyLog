@@ -5,6 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getRatingLabel, getRatingColor } from "@/lib/rating-utils";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 interface CameraCaptureProps {
   onWhiskyAdded?: () => void;
@@ -17,6 +21,13 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [whiskyDataToAdd, setWhiskyDataToAdd] = useState<any>(null);
+
+  // Rating state
+  const [showRateDialog, setShowRateDialog] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [tastingNotes, setTastingNotes] = useState("");
+  const [userProductToRate, setUserProductToRate] = useState<any>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -26,7 +37,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       // Add timeout to the API request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
+
       try {
         const response = await apiRequest("/api/analyze-bottle", {
           method: "POST",
@@ -43,9 +54,17 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     onSuccess: (result) => {
       setIsProcessing(false);
       setAnalysisResult(result);
-      if (result.success && onWhiskyAdded) {
-        onWhiskyAdded();
-        queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+      if (result.success) {
+        // Product found and added (or already exists)
+        if (result.userProduct) {
+          setUserProductToRate(result.userProduct);
+          setRating(result.userProduct.rating || 0);
+          setTastingNotes(result.userProduct.tastingNotes || "");
+          setShowRateDialog(true);
+        } else if (onWhiskyAdded) {
+          onWhiskyAdded();
+          queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+        }
       } else if (result.productNotFound && result.canAdd) {
         // Show confirmation dialog for adding new product
         setWhiskyDataToAdd(result.whiskyData);
@@ -55,7 +74,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     onError: (error: Error) => {
       setIsProcessing(false);
       console.error("Analysis error:", error);
-      
+
       let errorMessage = "Could not identify the whisky from the image";
       if (error.name === 'AbortError') {
         errorMessage = "Analysis timed out. Please try again with a clearer, well-lit photo.";
@@ -64,7 +83,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: "Analysis Failed",
         description: errorMessage,
@@ -93,7 +112,13 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       });
       setAnalysisResult(result);
       setShowAddDialog(false);
-      if (onWhiskyAdded) {
+
+      if (result.userProduct) {
+        setUserProductToRate(result.userProduct);
+        setRating(0); // New product, no rating yet
+        setTastingNotes(result.userProduct.tastingNotes || "");
+        setShowRateDialog(true);
+      } else if (onWhiskyAdded) {
         onWhiskyAdded();
         queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
         queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -109,9 +134,36 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     }
   });
 
+  // Mutation to update rating/notes
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: { id: string; rating: number; tastingNotes: string }) => {
+      return await apiRequest(`/api/user-products/${data.id}`, {
+        method: "PATCH",
+        body: { rating: data.rating, tastingNotes: data.tastingNotes }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Rating Saved",
+        description: "Your rating and notes have been saved.",
+      });
+      setShowRateDialog(false);
+      if (onWhiskyAdded) {
+        onWhiskyAdded();
+        queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Save",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCameraClick = () => {
-    // On mobile devices, this will open the camera
-    // On desktop, it will open file picker
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -122,19 +174,16 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
       const img = new Image();
-      
+
       img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
         const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
         canvas.width = img.width * ratio;
         canvas.height = img.height * ratio;
-        
-        // Draw and compress
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         img.src = e.target?.result as string;
@@ -147,7 +196,6 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid File",
@@ -158,7 +206,6 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     }
 
     try {
-      // Compress image to reduce upload size
       const compressedImage = await compressImage(file, 1200, 0.8);
       setCapturedImage(compressedImage);
     } catch (error) {
@@ -172,17 +219,16 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
 
   const handleAnalyzeImage = () => {
     if (!capturedImage) return;
-    
+
     setIsProcessing(true);
     setAnalysisResult(null);
-    
+
     try {
-      // Extract base64 data without the data URL prefix
       const base64Data = capturedImage.split(',')[1];
       if (!base64Data) {
         throw new Error("Invalid image data");
       }
-      
+
       console.log("Starting image analysis...");
       analyzeImageMutation.mutate(base64Data);
     } catch (error) {
@@ -206,6 +252,10 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    setShowRateDialog(false);
+    setUserProductToRate(null);
+    setRating(0);
+    setTastingNotes("");
   };
 
   const handleAddProduct = () => {
@@ -258,7 +308,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                     Take Photo
                   </Button>
                 </div>
-                
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -272,9 +322,9 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
             ) : (
               <div className="space-y-4">
                 <div className="relative">
-                  <img 
-                    src={capturedImage} 
-                    alt="Captured bottle" 
+                  <img
+                    src={capturedImage}
+                    alt="Captured bottle"
                     className="w-full h-64 object-cover rounded-lg"
                   />
                   <Button
@@ -289,18 +339,15 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                 </div>
 
                 {analysisResult && (
-                  <div className={`p-4 border rounded-lg ${
-                    analysisResult.success 
-                      ? "bg-green-50 border-green-200" 
+                  <div className={`p-4 border rounded-lg ${analysisResult.success
+                      ? "bg-green-50 border-green-200"
                       : "bg-blue-50 border-blue-200"
-                  }`}>
+                    }`}>
                     <div className="flex items-start gap-2">
-                      <CheckCircle className={`h-5 w-5 mt-0.5 ${
-                        analysisResult.success ? "text-green-600" : "text-blue-600"
-                      }`} />
-                      <p className={`text-sm ${
-                        analysisResult.success ? "text-green-800" : "text-blue-800"
-                      }`}>
+                      <CheckCircle className={`h-5 w-5 mt-0.5 ${analysisResult.success ? "text-green-600" : "text-blue-600"
+                        }`} />
+                      <p className={`text-sm ${analysisResult.success ? "text-green-800" : "text-blue-800"
+                        }`}>
                         {analysisResult.message}
                       </p>
                     </div>
@@ -326,7 +373,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
               Cancel
             </Button>
             {capturedImage && !analysisResult && (
-              <Button 
+              <Button
                 onClick={handleAnalyzeImage}
                 disabled={isLoading}
                 data-testid="button-analyze"
@@ -341,7 +388,7 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                 )}
               </Button>
             )}
-            {analysisResult && !showAddDialog && (
+            {analysisResult && !showAddDialog && !showRateDialog && (
               <Button onClick={handleClose} data-testid="button-done">
                 Done
               </Button>
@@ -386,14 +433,14 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
           )}
 
           <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleDeclineAdd}
               data-testid="button-decline-add"
             >
               No, Skip
             </Button>
-            <Button 
+            <Button
               onClick={handleAddProduct}
               disabled={createProductMutation.isPending}
               data-testid="button-confirm-add"
@@ -405,6 +452,95 @@ export default function CameraCapture({ onWhiskyAdded }: CameraCaptureProps) {
                 </>
               ) : (
                 "Yes, Add It"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rating Dialog */}
+      <Dialog open={showRateDialog} onOpenChange={(open) => {
+        if (!open) {
+          handleClose();
+        }
+        setShowRateDialog(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rate & Review</DialogTitle>
+            <DialogDescription>
+              Add your personal rating and tasting notes for this whisky.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Your Rating</Label>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-3xl font-bold ${getRatingColor(rating)}`}>
+                  {rating > 0 ? rating : "-"}<span className="text-lg text-slate-400 font-normal">/10</span>
+                </span>
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {getRatingLabel(rating)}
+                </Badge>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="1"
+                value={rating}
+                onChange={(e) => setRating(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+              />
+              <div className="flex justify-between text-xs text-slate-400 px-1">
+                <span>0</span>
+                <span>5</span>
+                <span>10</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-base font-semibold">Tasting Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Describe the nose, taste, and finish..."
+                value={tastingNotes}
+                onChange={(e) => setTastingNotes(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="ghost"
+              onClick={handleClose}
+              className="text-slate-500"
+            >
+              Skip
+            </Button>
+            <Button
+              onClick={() => {
+                if (userProductToRate) {
+                  updateProductMutation.mutate({
+                    id: userProductToRate.id,
+                    rating,
+                    tastingNotes
+                  });
+                }
+              }}
+              disabled={updateProductMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {updateProductMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Rating"
               )}
             </Button>
           </DialogFooter>

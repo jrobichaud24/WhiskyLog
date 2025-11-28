@@ -529,6 +529,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/user-products/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { rating, tastingNotes } = req.body;
+      const userProductId = req.params.id;
+
+      // Verify ownership
+      const userProducts = await storage.getUserProducts(req.session.userId);
+      const productToUpdate = userProducts.find(up => up.id === userProductId);
+
+      if (!productToUpdate) {
+        return res.status(404).json({ message: "Product not found in your collection" });
+      }
+
+      const updatedProduct = await storage.updateUserProduct(userProductId, {
+        rating: rating !== undefined ? rating : undefined,
+        tastingNotes: tastingNotes !== undefined ? tastingNotes : undefined,
+      });
+
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error("Update user product error:", error);
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
   // App reviews routes
   app.get("/api/reviews", async (req, res) => {
     try {
