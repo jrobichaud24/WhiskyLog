@@ -15,16 +15,27 @@ export async function apiRequest(
   } = {}
 ): Promise<any> {
   const { method = "GET", body } = options;
-  
+
+  // Get CSRF token from cookie
+  const csrfToken = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('XSRF-TOKEN='))
+    ?.split('=')[1];
+
+  const headers: Record<string, string> = body ? { "Content-Type": "application/json" } : {};
+  if (csrfToken) {
+    headers["X-XSRF-TOKEN"] = csrfToken;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : {},
+    headers,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  
+
   // Return JSON if there's content, otherwise return the response
   const contentType = res.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
@@ -38,18 +49,18 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
+    async ({ queryKey }) => {
+      const res = await fetch(queryKey.join("/") as string, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+      await throwIfResNotOk(res);
+      return await res.json();
+    };
 
 export const queryClient = new QueryClient({
   defaultOptions: {

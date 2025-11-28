@@ -15,6 +15,8 @@ import {
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
+import csurf from "csurf";
+import cookieParser from "cookie-parser";
 import Anthropic from '@anthropic-ai/sdk';
 import { BadgeService } from "./services/badge";
 
@@ -43,6 +45,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     rolling: true, // Reset expiration on each request
   }));
+
+  // CSRF Protection
+  app.use(cookieParser());
+
+  // Configure CSRF middleware
+  // We use cookie: true to store the secret in a cookie, which is stateless and works well with SPAs
+  const csrfProtection = csurf({ cookie: true });
+
+  // Apply CSRF protection to all routes
+  app.use(csrfProtection);
+
+  // Set CSRF token in a cookie for the client to read
+  app.use((req, res, next) => {
+    const token = req.csrfToken();
+    res.cookie('XSRF-TOKEN', token);
+    next();
+  });
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
