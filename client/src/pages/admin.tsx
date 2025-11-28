@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import DOMPurify from "dompurify";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff } from "lucide-react";
@@ -1453,7 +1454,7 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
                             </div>
                             {product.description && (
                               <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed" data-testid={`text-product-description-${product.id}`}>
-                                {product.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                                {DOMPurify.sanitize(product.description, { ALLOWED_TAGS: [] }).substring(0, 150)}...
                               </p>
                             )}
                           </div>
