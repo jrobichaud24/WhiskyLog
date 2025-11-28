@@ -35,9 +35,9 @@ export default function Navigation() {
           <div className="flex items-center space-x-3">
             <Link href="/" className="flex items-center space-x-3" data-testid="logo-link">
               <div className="w-12 h-12 rounded-lg overflow-hidden">
-                <img 
-                  src="/logo.png" 
-                  alt="The Dram Journal Logo" 
+                <img
+                  src="/logo.png"
+                  alt="The Dram Journal Logo"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -46,7 +46,7 @@ export default function Navigation() {
               </span>
             </Link>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className={getNavLinkClasses("/")} data-testid="nav-home">
               Home
@@ -60,15 +60,15 @@ export default function Navigation() {
             <Link href="/reviews" className={getNavLinkClasses("/reviews")} data-testid="nav-reviews">
               Reviews
             </Link>
-            <Button 
-              className="bg-amber-500 hover:bg-amber-600 text-white" 
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white"
               data-testid="button-get-started"
               onClick={() => setLocation('/signup')}
             >
               Get Started
             </Button>
           </div>
-          
+
           <Button
             variant="ghost"
             size="icon"
@@ -79,7 +79,7 @@ export default function Navigation() {
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
-        
+
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full bg-white/95 backdrop-blur-sm border-b border-amber-400/20 py-4">
             <div className="flex flex-col space-y-4 px-4">
@@ -92,11 +92,11 @@ export default function Navigation() {
               <Link href="/discover" className={getNavLinkClasses("/discover")} data-testid="mobile-nav-discover">
                 Discover
               </Link>
-              <a href="#" className="text-gray-700 hover:text-amber-600 transition-colors font-medium" data-testid="mobile-nav-reviews">
+              <Link href="/reviews" className={getNavLinkClasses("/reviews")} data-testid="mobile-nav-reviews">
                 Reviews
-              </a>
-              <Button 
-                className="bg-amber-500 hover:bg-amber-600 text-white w-fit" 
+              </Link>
+              <Button
+                className="bg-amber-500 hover:bg-amber-600 text-white w-fit"
                 data-testid="mobile-button-get-started"
                 onClick={() => setLocation('/signup')}
               >
