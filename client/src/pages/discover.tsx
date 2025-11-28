@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Globe, MapPin, Package } from "lucide-react";
 import Navigation from "@/components/navigation";
+import DOMPurify from "dompurify";
 import type { Product, Distillery } from "@shared/schema";
 
 export default function Discover() {
@@ -43,10 +44,10 @@ export default function Discover() {
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         getDistilleryName(product.distillery).toLowerCase().includes(searchQuery.toLowerCase());
-    
+      getDistilleryName(product.distillery).toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesDistillery = selectedDistillery === "all" || product.distillery === selectedDistillery;
-    
+
     const matchesRegion = selectedRegion === "all" || (() => {
       const distillery = getDistillery(product.distillery);
       return distillery?.region === selectedRegion;
@@ -229,8 +230,8 @@ export default function Discover() {
                           {/* Product Image */}
                           <div className="w-full h-32 rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
                             {product.productImage ? (
-                              <img 
-                                src={product.productImage} 
+                              <img
+                                src={product.productImage}
                                 alt={`${product.name} bottle`}
                                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                 onError={(e) => {
@@ -248,13 +249,13 @@ export default function Discover() {
 
                           <div>
                             <h3 className="font-playfair font-bold text-xl text-slate-800 group-hover:text-amber-800 transition-colors line-clamp-2" data-testid={`text-product-name-${product.id}`}>
-                              {product.name.replace(/<[^>]*>/g, '')}
+                              {DOMPurify.sanitize(product.name, { ALLOWED_TAGS: [] })}
                             </h3>
                             <p className="text-slate-600 text-sm" data-testid={`text-product-distillery-${product.id}`}>
                               {distilleryName}
                             </p>
                           </div>
-                          
+
                           <div className="flex flex-wrap gap-2">
                             {product.abvPercent && (
                               <Badge variant="outline" className="border-slate-200">
@@ -275,16 +276,16 @@ export default function Discover() {
 
                           {product.description && (
                             <p className="text-slate-600 text-sm line-clamp-3" data-testid={`text-product-description-${product.id}`}>
-                              {product.description.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                              {DOMPurify.sanitize(product.description, { ALLOWED_TAGS: [] }).substring(0, 150)}...
                             </p>
                           )}
 
                           {product.productUrl && (
                             <div className="pt-2 border-t border-slate-100">
-                              <a 
-                                href={product.productUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
+                              <a
+                                href={product.productUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center space-x-1"
                               >
                                 <Globe className="h-4 w-4" />
@@ -317,25 +318,25 @@ export default function Discover() {
             )}
           </div>
         )}
-        
+
         {/* Creative Commons Attribution */}
         {products.length > 0 && (
           <div className="mt-12 pt-8 border-t border-slate-200">
             <div className="text-center text-sm text-slate-600 space-y-2">
               <p>
                 Product information and images are sourced from{' '}
-                <a 
-                  href="https://thewhiskyedition.com" 
-                  target="_blank" 
+                <a
+                  href="https://thewhiskyedition.com"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-amber-600 hover:text-amber-700 font-medium"
                 >
                   TheWhiskyEdition.com
                 </a>
                 {' '}and used under the{' '}
-                <a 
-                  href="https://creativecommons.org/licenses/by/4.0/" 
-                  target="_blank" 
+                <a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-amber-600 hover:text-amber-700 font-medium"
                 >
