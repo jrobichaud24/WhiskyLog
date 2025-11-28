@@ -30,7 +30,7 @@ export default function Badges() {
             <Button
               variant="ghost"
               className="text-slate-300 hover:text-white hover:bg-slate-700/50 mr-4"
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation("/dashboard")}
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               Back to Dashboard
@@ -50,8 +50,8 @@ export default function Badges() {
               <Card
                 key={badge.id}
                 className={`border-2 transition-all duration-300 ${isEarned
-                    ? "border-amber-200 bg-white shadow-md hover:shadow-xl"
-                    : "border-slate-200 bg-slate-50/50 opacity-70"
+                  ? "border-amber-200 bg-white shadow-md hover:shadow-xl"
+                  : "border-slate-200 bg-slate-50/50 opacity-70"
                   }`}
               >
                 <CardContent className="p-6 flex flex-col items-center text-center h-full">
