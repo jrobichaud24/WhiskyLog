@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "react"; // Force rebuild
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -14,17 +13,16 @@ import Navigation from "@/components/navigation";
 interface LoginForm {
   username: string;
   password: string;
-  rememberMe?: boolean;
 }
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Get redirect URL from query parameters
   const urlParams = new URLSearchParams(window.location.search);
   const redirectTo = urlParams.get('redirect') || '/dashboard';
-  
+
   const {
     register,
     handleSubmit,
@@ -71,9 +69,9 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 rounded-lg overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="The Dram Journal Logo" 
+              <img
+                src="/logo.png"
+                alt="The Dram Journal Logo"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -99,8 +97,8 @@ export default function Login() {
                   type="text"
                   placeholder="Enter your username or email"
                   data-testid="input-username"
-                  {...register("username", { 
-                    required: "Username or email is required" 
+                  {...register("username", {
+                    required: "Username or email is required"
                   })}
                 />
                 {errors.username && (
@@ -117,8 +115,8 @@ export default function Login() {
                   type="password"
                   placeholder="Enter your password"
                   data-testid="input-password"
-                  {...register("password", { 
-                    required: "Password is required" 
+                  {...register("password", {
+                    required: "Password is required"
                   })}
                 />
                 {errors.password && (
@@ -126,17 +124,6 @@ export default function Login() {
                     {errors.password.message}
                   </p>
                 )}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="rememberMe" 
-                  {...register("rememberMe")}
-                  data-testid="checkbox-remember-me"
-                />
-                <Label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
-                  Keep me signed in for 30 days
-                </Label>
               </div>
 
               <Button
@@ -153,7 +140,7 @@ export default function Login() {
               <Link href="/reset-password" className="text-sm text-amber-600 hover:text-amber-700" data-testid="link-reset-password">
                 Forgot your password?
               </Link>
-              
+
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <Link href="/signup" className="text-amber-600 hover:text-amber-700 font-medium" data-testid="link-signup">
