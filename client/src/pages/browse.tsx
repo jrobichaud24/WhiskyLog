@@ -46,6 +46,11 @@ export default function Browse() {
 
   const { user, isLoading: userLoading } = useAuth();
 
+  // Parse query parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialFilter = searchParams.get("filter");
+  const [showWishlistOnly, setShowWishlistOnly] = useState(initialFilter === "wishlist");
+
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistillery, setSelectedDistillery] = useState("all");
@@ -112,6 +117,12 @@ export default function Browse() {
       return false;
     }
 
+    // Wishlist filter
+    if (showWishlistOnly) {
+      const inWishlist = (userProducts as any[]).some((up: any) => up.productId === product.id && up.wishlist);
+      if (!inWishlist) return false;
+    }
+
     return true;
   });
 
@@ -125,9 +136,10 @@ export default function Browse() {
     setMinABV("");
     setMaxABV("");
     setSelectedRegion("all");
+    setShowWishlistOnly(false);
   };
 
-  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minABV || maxABV || (selectedRegion !== "all");
+  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minABV || maxABV || (selectedRegion !== "all") || showWishlistOnly;
 
   // Add to collection mutation
   const addToCollectionMutation = useMutation({
@@ -386,6 +398,11 @@ export default function Browse() {
             <CardTitle className="flex items-center text-2xl text-slate-800">
               <Search className="h-6 w-6 mr-3 text-amber-600" />
               Search & Filter Collection
+              {showWishlistOnly && (
+                <Badge variant="secondary" className="ml-3 bg-amber-100 text-amber-800">
+                  Wishlist Only
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription className="text-slate-600">
               Find the perfect whisky for your tasting journey. Showing {filteredProducts.length} of {products.length} products.
@@ -623,17 +640,17 @@ export default function Browse() {
                               disabled={isInCollection(product.id)}
                               variant="outline"
                               className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
-                                  ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-                                  : isInWishlist(product.id)
-                                    ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
-                                    : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                                ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                                : isInWishlist(product.id)
+                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
+                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
                                 }`}
                               data-testid={`button-toggle-wishlist-${product.id}`}
                             >
                               <Heart
                                 className={`h-4 w-4 ${isInWishlist(product.id)
-                                    ? "fill-green-600 font-bold stroke-2"
-                                    : ""
+                                  ? "fill-green-600 font-bold stroke-2"
+                                  : ""
                                   }`}
                               />
                             </Button>
@@ -656,8 +673,8 @@ export default function Browse() {
                               size="sm"
                               onClick={() => handleToggleCollection(product.id)}
                               className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
-                                  ? "bg-green-500 hover:bg-green-600 text-white"
-                                  : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                                ? "bg-green-500 hover:bg-green-600 text-white"
+                                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                                 }`}
                               data-testid={`button-toggle-collection-${product.id}`}
                             >

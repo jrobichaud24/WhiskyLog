@@ -147,12 +147,7 @@ export default function Dashboard() {
                   <Button
                     variant="outline"
                     className="border-2 border-green-200 text-green-700 hover:bg-green-50 px-6 py-3 text-lg"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Wishlist view will be available soon. For now, you can see wishlisted items in the browse section.",
-                      });
-                    }}
+                    onClick={() => setLocation("/browse?filter=wishlist")}
                     data-testid="button-view-wishlist"
                   >
                     <Heart className="h-5 w-5 mr-2" />
