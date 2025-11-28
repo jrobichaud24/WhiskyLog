@@ -108,11 +108,15 @@ export type UserProduct = typeof userProducts.$inferSelect;
 export const badges = pgTable("badges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(), // Stable reference for code
   description: text("description").notNull(),
   icon: text("icon").notNull(), // Lucide icon name
   category: text("category").notNull(), // e.g., "collection", "tasting", "exploration"
   rarity: text("rarity").notNull().default("common"), // common, rare, epic, legendary
   requirement: text("requirement").notNull(), // Description of how to earn the badge
+  triggerType: text("trigger_type").notNull(), // e.g., "tasting_count", "region_count"
+  targetValue: integer("target_value").notNull(), // Threshold to earn
+  imageUrl: text("image_url"), // Path to custom badge image
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

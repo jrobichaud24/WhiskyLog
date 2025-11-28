@@ -1,21 +1,16 @@
 import { useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, Star, Plus, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
+import { LogOut, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
 import { getRatingLabel } from "@/lib/rating-utils";
-
-import type { User, UserBadge } from "@shared/schema";
+import type { UserBadge } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
-
   const { user, isLoading: userLoading } = useAuth();
 
   useEffect(() => {
@@ -230,17 +225,27 @@ export default function Dashboard() {
                 <h4 className="font-semibold text-slate-800 mb-3">Recent Achievements</h4>
                 {userBadges.length > 0 ? (
                   <div className="space-y-2">
-                    {userBadges.slice(0, 3).map((userBadge, index) => (
+                    {userBadges.slice(0, 3).map((userBadge: any, index: number) => (
                       <div
                         key={userBadge.id}
                         className="flex items-center space-x-3 bg-white p-3 rounded-lg border border-amber-200"
                         data-testid={`recent-badge-${index}`}
                       >
-                        <div className="bg-amber-100 p-2 rounded-lg">
-                          <Award className="h-4 w-4 text-amber-600" />
+                        <div className="p-2 rounded-lg">
+                          {userBadge.badge?.imageUrl ? (
+                            <img
+                              src={userBadge.badge.imageUrl}
+                              alt={userBadge.badge.name}
+                              className="h-10 w-10 object-contain drop-shadow-md"
+                            />
+                          ) : (
+                            <div className="bg-amber-100 p-2 rounded-lg">
+                              <Award className="h-4 w-4 text-amber-600" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1">
-                          <div className="font-medium text-slate-800">Badge Earned!</div>
+                          <div className="font-medium text-slate-800">{userBadge.badge?.name || "Badge Earned!"}</div>
                           <div className="text-sm text-slate-600">
                             {userBadge.earnedAt ? new Date(userBadge.earnedAt).toLocaleDateString() : 'Recently'}
                           </div>

@@ -16,6 +16,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import Anthropic from '@anthropic-ai/sdk';
+import { BadgeService } from "./services/badge";
 
 // Extend session interface
 declare module 'express-session' {
@@ -488,6 +489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userProduct = await storage.createUserProduct(validatedData);
+
+      // Check for badges
+      await BadgeService.checkAndAwardBadges(req.session.userId);
+
       res.status(201).json(userProduct);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -550,6 +555,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rating: rating !== undefined ? rating : undefined,
         tastingNotes: tastingNotes !== undefined ? tastingNotes : undefined,
       });
+
+      // Check for badges
+      await BadgeService.checkAndAwardBadges(req.session.userId);
 
       res.json(updatedProduct);
     } catch (error) {
@@ -615,7 +623,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userBadges = await storage.getUserBadges(req.session.userId);
-      res.json(userBadges);
+      const allBadges = await storage.getBadges();
+
+      const enrichedBadges = userBadges.map(ub => {
+        const badge = allBadges.find(b => b.id === ub.badgeId);
+        return { ...ub, badge };
+      });
+
+      res.json(enrichedBadges);
     } catch (error) {
       console.error("Get user badges error:", error);
       res.status(500).json({ message: "Failed to fetch user badges" });
