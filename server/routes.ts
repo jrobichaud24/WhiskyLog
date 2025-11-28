@@ -34,17 +34,7 @@ const anthropic = new Anthropic({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure sessions with persistent login
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set to true in production with HTTPS
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for persistent login
-    },
-    rolling: true, // Reset expiration on each request
-  }));
+
 
   // CSRF Protection
   app.use(cookieParser());
