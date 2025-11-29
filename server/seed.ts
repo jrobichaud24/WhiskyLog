@@ -109,7 +109,7 @@ async function seed() {
                 requirement: "Rate 5 Islay whiskies",
                 triggerType: "region_count",
                 targetValue: 5,
-                imageUrl: null // TODO: Generate image
+                imageUrl: "/icons/badges/islay-fan.png"
             },
             {
                 name: "Speyside Specialist",
@@ -121,7 +121,7 @@ async function seed() {
                 requirement: "Rate 5 Speyside whiskies",
                 triggerType: "region_count",
                 targetValue: 5,
-                imageUrl: null // TODO: Generate image
+                imageUrl: "/icons/badges/speyside-specialist.png"
             }
         ];
 
