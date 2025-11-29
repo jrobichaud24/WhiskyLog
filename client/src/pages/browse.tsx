@@ -649,6 +649,20 @@ export default function Browse() {
                       </Button>
                     </div>
 
+                    {/* Display Image if available */}
+                    {aiSearchResult.whiskyData.image_url && (
+                      <div className="mb-4 w-full h-48 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                        <img
+                          src={aiSearchResult.whiskyData.image_url}
+                          alt={aiSearchResult.whiskyData.name}
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+
                     <div className="space-y-3 mb-6">
                       <div>
                         <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>

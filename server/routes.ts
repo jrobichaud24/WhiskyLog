@@ -1130,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Analyze the text query with Anthropic
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
         messages: [
           {
@@ -1170,6 +1170,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(422).json({
           message: "Could not identify whisky details from the search query."
         });
+      }
+
+      // Perform Image Search if keys are available
+      if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_CX && whiskyData.name) {
+        try {
+          const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CX}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
+
+          const imageResponse = await fetch(googleUrl);
+          const imageData = await imageResponse.json();
+
+          if (imageData.items && imageData.items.length > 0) {
+            whiskyData.image_url = imageData.items[0].link;
+          }
+        } catch (imageError) {
+          console.error("Image search failed:", imageError);
+          // Continue without image
+        }
       }
 
       // Search for existing product in database
@@ -1272,6 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: whiskyData.description || `Added from bottle scan: ${whiskyData.name}`,
         volumeCl: whiskyData.volume || null,
         ageStatement: whiskyData.age || null,
+        productImage: whiskyData.image_url || null,
         createdByUserId: req.session.userId
       };
 
