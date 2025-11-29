@@ -1115,6 +1115,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Text-based whisky identification endpoint
+  app.post("/api/identify-whisky-text", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { query } = req.body;
+
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+
+      // Analyze the text query with Anthropic
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: `Analyze this whisky search query: "${query}". Extract the whisky name, distillery, age statement, ABV, and any other details. 
+            
+            Format the response as JSON with fields: 
+            - name: The full product name
+            - distillery: The distillery name
+            - age: The age statement (e.g., "12 Year Old") or null
+            - abv: The ABV percentage (e.g., "43%") or null
+            - description: A brief description based on the query or general knowledge about this whisky
+            
+            If the query is too vague to identify a specific whisky, try to provide the most likely match or a generic description.
+            Only respond with the JSON, no other text.`
+          }
+        ]
+      });
+
+      let whiskyData;
+      try {
+        const content = response.content[0];
+        if (content.type === 'text') {
+          const analysisText = content.text;
+          // Try to parse JSON response
+          const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            whiskyData = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error("No JSON found in response");
+          }
+        } else {
+          throw new Error("Invalid response type");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", parseError);
+        return res.status(422).json({
+          message: "Could not identify whisky details from the search query."
+        });
+      }
+
+      // Search for existing product in database
+      const products = await storage.getProducts();
+      const distilleries = await storage.getDistilleries();
+
+      const matchingProduct = products.find(product => {
+        if (!whiskyData.name) return false;
+
+        // Simple matching logic
+        const nameMatch = product.name.toLowerCase().includes(whiskyData.name.toLowerCase()) ||
+          whiskyData.name.toLowerCase().includes(product.name.toLowerCase());
+
+        if (whiskyData.distillery) {
+          const distillery = distilleries.find(d => d.id === product.distillery);
+          const distilleryMatch = distillery?.name.toLowerCase().includes(whiskyData.distillery.toLowerCase()) ||
+            whiskyData.distillery.toLowerCase().includes(distillery?.name.toLowerCase() || "");
+          return nameMatch && distilleryMatch;
+        }
+
+        return nameMatch;
+      });
+
+      if (matchingProduct) {
+        // Check if user already has this product
+        const existingUserProduct = await storage.getUserProduct(req.session.userId, matchingProduct.id);
+
+        return res.json({
+          success: true,
+          message: `Found existing product: ${matchingProduct.name}`,
+          whiskyData,
+          product: matchingProduct,
+          userProduct: existingUserProduct,
+          inDatabase: true
+        });
+      } else {
+        // Product not found in database
+        return res.json({
+          success: true,
+          productNotFound: true,
+          message: `Identified whisky: ${whiskyData.name || "Unknown"}, but it's not in our database yet.`,
+          whiskyData,
+          canAdd: true,
+          inDatabase: false
+        });
+      }
+
+    } catch (error) {
+      console.error("Text identification error:", error);
+      res.status(500).json({
+        message: "Failed to identify whisky. Please try again.",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Create product from camera analysis endpoint
   app.post("/api/analyze-bottle/create-product", async (req, res) => {
     if (!req.session.userId) {

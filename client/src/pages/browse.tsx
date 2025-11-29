@@ -28,7 +28,8 @@ import {
   Star,
   Heart,
   Check,
-  Package
+  Package,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
@@ -57,6 +58,10 @@ export default function Browse() {
   const [minABV, setMinABV] = useState("");
   const [maxABV, setMaxABV] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("all");
+
+  // AI Search state
+  const [aiSearchResult, setAiSearchResult] = useState<any>(null);
+  const [isAiSearching, setIsAiSearching] = useState(false);
 
   // Data queries
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
@@ -137,6 +142,7 @@ export default function Browse() {
     setMaxABV("");
     setSelectedRegion("all");
     setShowWishlistOnly(false);
+    setAiSearchResult(null);
   };
 
   const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minABV || maxABV || (selectedRegion !== "all") || showWishlistOnly;
@@ -257,6 +263,75 @@ export default function Browse() {
       });
     }
   });
+
+  // AI Search Mutation
+  const identifyWhiskyMutation = useMutation({
+    mutationFn: async (query: string) => {
+      return await apiRequest("/api/identify-whisky-text", {
+        method: "POST",
+        body: { query }
+      });
+    },
+    onSuccess: (result) => {
+      setAiSearchResult(result);
+      if (result.success) {
+        toast({
+          title: result.inDatabase ? "Whisky Found!" : "Whisky Identified",
+          description: result.message,
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Search Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Create product from AI result
+  const createProductMutation = useMutation({
+    mutationFn: async (whiskyData: any) => {
+      return await apiRequest("/api/analyze-bottle/create-product", {
+        method: "POST",
+        body: { whiskyData }
+      });
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Success!",
+        description: result.message,
+      });
+      // Clear AI result and refresh products
+      setAiSearchResult(null);
+      setSearchTerm(""); // Clear search to show the new product
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleAiSearch = () => {
+    if (!searchTerm) return;
+    setIsAiSearching(true);
+    identifyWhiskyMutation.mutate(searchTerm, {
+      onSettled: () => setIsAiSearching(false)
+    });
+  };
+
+  const handleAddAiProduct = () => {
+    if (aiSearchResult?.whiskyData) {
+      createProductMutation.mutate(aiSearchResult.whiskyData);
+    }
+  };
 
   const handleAddToCollection = (product: Product) => {
     setSelectedProduct(product);
@@ -508,21 +583,121 @@ export default function Browse() {
                 <Search className="h-16 w-16 mx-auto" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-6">
                 {hasActiveFilters
                   ? "Try adjusting your filters to find more whiskies."
                   : "No whiskies are currently available in the collection."
                 }
               </p>
-              {hasActiveFilters && (
-                <Button
-                  onClick={clearFilters}
-                  className="bg-amber-500 hover:bg-amber-600 text-white"
-                  data-testid="button-clear-all-filters"
-                >
-                  Clear All Filters
-                </Button>
-              )}
+
+              <div className="flex flex-col items-center gap-4">
+                {hasActiveFilters && (
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                    data-testid="button-clear-all-filters"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+
+                {/* AI Search Fallback */}
+                {searchTerm && !aiSearchResult && (
+                  <div className="mt-4 p-6 bg-amber-50 rounded-lg border border-amber-100 max-w-md w-full">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center justify-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Can't find what you're looking for?
+                    </h4>
+                    <p className="text-sm text-amber-700 mb-4">
+                      Use our AI to search the global whisky database and add it to the system.
+                    </p>
+                    <Button
+                      onClick={handleAiSearch}
+                      disabled={isAiSearching}
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                    >
+                      {isAiSearching ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Searching Global Database...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Search for "{searchTerm}" with AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {/* AI Search Results */}
+                {aiSearchResult && (
+                  <div className="mt-4 p-6 bg-white rounded-lg border border-amber-200 shadow-lg max-w-md w-full text-left">
+                    <div className="flex justify-between items-start mb-4">
+                      <h4 className="font-bold text-lg text-slate-800">
+                        {aiSearchResult.inDatabase ? "Found in Database!" : "Whisky Identified"}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAiSearchResult(null)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>
+                        <p className="font-medium text-slate-800">{aiSearchResult.whiskyData.name}</p>
+                      </div>
+                      {aiSearchResult.whiskyData.distillery && (
+                        <div>
+                          <span className="text-xs font-semibold text-slate-500 uppercase">Distillery</span>
+                          <p className="text-slate-700">{aiSearchResult.whiskyData.distillery}</p>
+                        </div>
+                      )}
+                      {aiSearchResult.whiskyData.description && (
+                        <div>
+                          <span className="text-xs font-semibold text-slate-500 uppercase">Description</span>
+                          <p className="text-sm text-slate-600 line-clamp-3">{aiSearchResult.whiskyData.description}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {aiSearchResult.inDatabase ? (
+                      <Button
+                        onClick={() => handleAddToCollection(aiSearchResult.product)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Collection
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleAddAiProduct}
+                        disabled={createProductMutation.isPending}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {createProductMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Adding to Database...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add to Database & Collection
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         ) : (
