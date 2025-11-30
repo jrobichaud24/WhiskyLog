@@ -28,6 +28,12 @@ declare module 'express-session' {
 }
 
 // Initialize Anthropic client
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn("WARNING: ANTHROPIC_API_KEY is missing from environment variables!");
+} else {
+  console.log("Anthropic API Key loaded: " + process.env.ANTHROPIC_API_KEY.substring(0, 8) + "...");
+}
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -989,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Analyze the image with Anthropic
       const response = await anthropic.messages.create({
-        model: "claude-3-sonnet-20240229",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
         messages: [
           {
@@ -1130,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Analyze the text query with Anthropic
       const response = await anthropic.messages.create({
-        model: "claude-3-sonnet-20240229",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
         messages: [
           {
