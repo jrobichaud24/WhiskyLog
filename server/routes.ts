@@ -31,7 +31,8 @@ declare module 'express-session' {
 if (!process.env.ANTHROPIC_API_KEY) {
   console.warn("WARNING: ANTHROPIC_API_KEY is missing from environment variables!");
 } else {
-  console.log(`Anthropic API Key loaded: ${process.env.ANTHROPIC_API_KEY.substring(0, 8)}... (Length: ${process.env.ANTHROPIC_API_KEY.length})`);
+  console.warn("WARNING: Logging full API key for debugging. Remove this immediately after verification!");
+  console.log(`Anthropic API Key loaded: ${process.env.ANTHROPIC_API_KEY} (Length: ${process.env.ANTHROPIC_API_KEY.length})`);
 }
 
 const anthropic = new Anthropic({
