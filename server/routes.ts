@@ -1174,19 +1174,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Perform Image Search if keys are available
       if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_CX && whiskyData.name) {
+        console.log(`Searching for image: ${whiskyData.name}`);
         try {
           const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CX}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
 
           const imageResponse = await fetch(googleUrl);
           const imageData = await imageResponse.json();
 
-          if (imageData.items && imageData.items.length > 0) {
+          if (imageData.error) {
+            console.error("Google Search API Error:", JSON.stringify(imageData.error, null, 2));
+          } else if (imageData.items && imageData.items.length > 0) {
             whiskyData.image_url = imageData.items[0].link;
+            console.log(`Found image URL: ${whiskyData.image_url}`);
+          } else {
+            console.log("No images found in Google Search results.");
           }
         } catch (imageError) {
           console.error("Image search failed:", imageError);
           // Continue without image
         }
+      } else {
+        console.log("Skipping image search: Missing keys or whisky name.");
       }
 
       // Search for existing product in database
