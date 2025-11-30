@@ -1,15 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, BookOpen, Settings, CheckCircle, Heart, Trophy, Award } from "lucide-react";
+import { LogOut, BookOpen, Settings, CheckCircle, Heart, Trophy, Award, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
 import { getRatingLabel } from "@/lib/rating-utils";
 import type { UserBadge } from "@shared/schema";
 
 export default function Dashboard() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { user, isLoading: userLoading } = useAuth();
 
@@ -90,7 +91,9 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-3">
               <Button
                 className="bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => setLocation("/browse")}
@@ -109,7 +112,37 @@ export default function Dashboard() {
                 {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
               </Button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-amber-500 hover:text-amber-400 hover:bg-slate-800"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-slate-700 pt-4 space-y-3 animate-in slide-in-from-top-2">
+              <Button
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white justify-start"
+                onClick={() => setLocation("/browse")}
+              >
+                Browse Whiskies
+              </Button>
+              <Button
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white justify-start"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 

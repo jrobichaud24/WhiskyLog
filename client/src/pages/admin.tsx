@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import DOMPurify from "dompurify";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff } from "lucide-react";
+import { Building2, Package, Upload, Plus, MapPin, Calendar, Globe, FileSpreadsheet, X, Filter, LogOut, Users, UserPlus, Edit, Trash2, Shield, ShieldOff, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -138,6 +139,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
   const { toast } = useToast();
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkData, setBulkData] = useState("");
   const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -290,18 +292,8 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           <h2 className="text-2xl font-playfair font-bold text-slate-800">Distilleries</h2>
           <p className="text-slate-600">Manage the master list of Scottish distilleries ({distilleries.length} total)</p>
         </div>
-        <div className="flex space-x-3">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="bg-red-500 hover:bg-red-600 text-white"
-                disabled={selectedIds.size === 0}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete ({selectedIds.size})
-              </Button>
-            </AlertDialogTrigger>
+        <div className="flex items-center">
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -312,7 +304,10 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                  onClick={() => {
+                    bulkDeleteMutation.mutate(Array.from(selectedIds));
+                    setDeleteDialogOpen(false);
+                  }}
                   className="bg-red-500 hover:bg-red-600"
                 >
                   Delete
@@ -320,23 +315,65 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button
-            variant="outline"
-            onClick={() => setShowBulkImport(!showBulkImport)}
-            className="border-amber-200 text-amber-700 hover:bg-amber-50"
-            data-testid="button-bulk-import-distilleries"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk Import
-          </Button>
-          <Button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-            data-testid="button-add-distillery"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Distillery
-          </Button>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex space-x-3">
+            <Button
+              variant="destructive"
+              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={selectedIds.size === 0}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete ({selectedIds.size})
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkImport(!showBulkImport)}
+              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              data-testid="button-bulk-import-distilleries"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+              data-testid="button-add-distillery"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Distillery
+            </Button>
+          </div>
+
+          {/* Mobile Actions */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-amber-600">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowAddForm(!showAddForm)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Distillery
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowBulkImport(!showBulkImport)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk Import
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={selectedIds.size === 0}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedIds.size})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -711,6 +748,7 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
   const { toast } = useToast();
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkData, setBulkData] = useState("");
   const [importMethod, setImportMethod] = useState<"json" | "csv">("json");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1044,18 +1082,8 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
           <h2 className="text-2xl font-playfair font-bold text-slate-800">Products</h2>
           <p className="text-slate-600">Manage whisky products from all distilleries</p>
         </div>
-        <div className="flex space-x-3">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="bg-red-500 hover:bg-red-600 text-white"
-                disabled={selectedIds.size === 0}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete ({selectedIds.size})
-              </Button>
-            </AlertDialogTrigger>
+        <div className="flex items-center">
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -1066,7 +1094,10 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+                  onClick={() => {
+                    bulkDeleteMutation.mutate(Array.from(selectedIds));
+                    setDeleteDialogOpen(false);
+                  }}
                   className="bg-red-500 hover:bg-red-600"
                 >
                   Delete
@@ -1074,23 +1105,65 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button
-            variant="outline"
-            onClick={() => setShowBulkImport(!showBulkImport)}
-            className="border-amber-200 text-amber-700 hover:bg-amber-50"
-            data-testid="button-bulk-import-products"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk Import
-          </Button>
-          <Button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-            data-testid="button-add-product"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
+
+          {/* Desktop Actions */}
+          <div className="hidden md:flex space-x-3">
+            <Button
+              variant="destructive"
+              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={selectedIds.size === 0}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete ({selectedIds.size})
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkImport(!showBulkImport)}
+              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              data-testid="button-bulk-import-products"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+              data-testid="button-add-product"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
+
+          {/* Mobile Actions */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-amber-600">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowAddForm(!showAddForm)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowBulkImport(!showBulkImport)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk Import
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={selectedIds.size === 0}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selectedIds.size})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
