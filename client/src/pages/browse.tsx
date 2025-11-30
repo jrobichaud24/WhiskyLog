@@ -80,17 +80,17 @@ export default function Browse() {
   });
 
   // Derived Data
-  const distilleryMap = distilleries.reduce((acc, d) => ({ ...acc, [d.id]: d }), {} as Record<number, Distillery>);
+  const distilleryMap = distilleries.reduce((acc, d) => ({ ...acc, [d.id]: d }), {} as Record<string, Distillery>);
   const regions = Array.from(new Set(distilleries.map(d => d.region).filter(Boolean)));
 
-  const isInCollection = (productId: number) => userProducts.some(up => up.productId === productId);
-  const isInWishlist = (productId: number) => wishlist.some(w => w.productId === productId);
+  const isInCollection = (productId: string) => userProducts.some(up => up.productId === productId);
+  const isInWishlist = (productId: string) => wishlist.some(w => w.productId === productId);
 
   const filteredProducts = products.filter(product => {
-    const distillery = distilleryMap[product.distillery || 0];
+    const distillery = product.distillery ? distilleryMap[product.distillery] : null;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (distillery?.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesDistillery = selectedDistillery === "all" || product.distillery === parseInt(selectedDistillery);
+    const matchesDistillery = selectedDistillery === "all" || product.distillery === selectedDistillery;
     const matchesRegion = selectedRegion === "all" || distillery?.region === selectedRegion;
     const matchesMinABV = !minABV || (product.abvPercent && parseFloat(product.abvPercent) >= parseFloat(minABV));
     const matchesMaxABV = !maxABV || (product.abvPercent && parseFloat(product.abvPercent) <= parseFloat(maxABV));
@@ -189,7 +189,7 @@ export default function Browse() {
   });
 
   const toggleWishlistMutation = useMutation({
-    mutationFn: async (productId: number) => {
+    mutationFn: async (productId: string) => {
       return await apiRequest("/api/wishlist/toggle", {
         method: "POST",
         body: { productId },
@@ -224,15 +224,16 @@ export default function Browse() {
       productId: selectedProduct.id,
       rating,
       tastingNotes,
+      owned: true,
       earnedAt: new Date().toISOString(),
     });
   };
 
-  const handleToggleWishlist = (productId: number) => {
+  const handleToggleWishlist = (productId: string) => {
     toggleWishlistMutation.mutate(productId);
   };
 
-  const handleToggleCollection = (productId: number) => {
+  const handleToggleCollection = (productId: string) => {
     if (isInCollection(productId)) {
       toast({ title: "Already in collection", description: "Go to your collection to manage this item." });
     } else {
@@ -420,348 +421,342 @@ export default function Browse() {
               </div>
             </div>
           </CardContent>
-        </Card >
+        </Card>
 
         {/* Products Grid */}
-        {
-          productsLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-12 w-12 animate-spin text-amber-600" />
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <Card className="bg-white/90 backdrop-blur-sm">
-              <CardContent className="p-12 text-center">
-                <div className="text-gray-400 mb-4">
-                  <Search className="h-16 w-16 mx-auto" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
-                <p className="text-gray-600 mb-6">
-                  {hasActiveFilters
-                    ? "Try adjusting your filters to find more whiskies."
-                    : "No whiskies are currently available in the collection."
-                  }
-                </p>
+        {productsLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-12 w-12 animate-spin text-amber-600" />
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <Card className="bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-12 text-center">
+              <div className="text-gray-400 mb-4">
+                <Search className="h-16 w-16 mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
+              <p className="text-gray-600 mb-6">
+                {hasActiveFilters
+                  ? "Try adjusting your filters to find more whiskies."
+                  : "No whiskies are currently available in the collection."
+                }
+              </p>
 
-                <div className="flex flex-col items-center gap-4">
-                  {hasActiveFilters && (
+              <div className="flex flex-col items-center gap-4">
+                {hasActiveFilters && (
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                    data-testid="button-clear-all-filters"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+
+                {/* AI Search Fallback */}
+                {searchTerm && !aiSearchResult && (
+                  <div className="mt-4 p-6 bg-amber-50 rounded-lg border border-amber-100 max-w-md w-full">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center justify-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Can't find what you're looking for?
+                    </h4>
+                    <p className="text-sm text-amber-700 mb-4">
+                      Use our AI to search the global whisky database and add it to the system.
+                    </p>
                     <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                      data-testid="button-clear-all-filters"
+                      onClick={handleAiSearch}
+                      disabled={isAiSearching}
+                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                     >
-                      Clear All Filters
+                      {isAiSearching ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Searching Global Database...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Search for "{searchTerm}" with AI
+                        </>
+                      )}
                     </Button>
-                  )}
+                  </div>
+                )}
 
-                  {/* AI Search Fallback */}
-                  {searchTerm && !aiSearchResult && (
-                    <div className="mt-4 p-6 bg-amber-50 rounded-lg border border-amber-100 max-w-md w-full">
-                      <h4 className="font-semibold text-amber-800 mb-2 flex items-center justify-center gap-2">
-                        <Sparkles className="h-4 w-4" />
-                        Can't find what you're looking for?
+                {/* AI Search Results */}
+                {aiSearchResult && (
+                  <div className="mt-4 p-6 bg-white rounded-lg border border-amber-200 shadow-lg max-w-md w-full text-left">
+                    <div className="flex justify-between items-start mb-4">
+                      <h4 className="font-bold text-lg text-slate-800">
+                        {aiSearchResult.inDatabase ? "Found in Database!" : "Whisky Identified"}
                       </h4>
-                      <p className="text-sm text-amber-700 mb-4">
-                        Use our AI to search the global whisky database and add it to the system.
-                      </p>
                       <Button
-                        onClick={handleAiSearch}
-                        disabled={isAiSearching}
-                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAiSearchResult(null)}
+                        className="h-6 w-6 p-0"
                       >
-                        {isAiSearching ? (
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Display Image if available */}
+                    {aiSearchResult.whiskyData.image_url && (
+                      <div className="mb-4 w-full h-48 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                        <img
+                          src={aiSearchResult.whiskyData.image_url}
+                          alt={aiSearchResult.whiskyData.name}
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-3 mb-6">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>
+                        <p className="font-medium text-slate-800">{aiSearchResult.whiskyData.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase">Distillery</span>
+                        <p className="text-sm text-slate-600">{aiSearchResult.whiskyData.distillery_name || "Unknown"}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase">Description</span>
+                        <p className="text-sm text-slate-600 line-clamp-3">{aiSearchResult.whiskyData.description}</p>
+                      </div>
+                    </div>
+
+                    {aiSearchResult.inDatabase ? (
+                      <Button
+                        onClick={() => handleAddToCollection(aiSearchResult.product)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Collection
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleAddAiProduct}
+                        disabled={createProductMutation.isPending}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {createProductMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Searching Global Database...
+                            Adding to Database...
                           </>
                         ) : (
                           <>
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Search for "{searchTerm}" with AI
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add to Database & Collection
                           </>
                         )}
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {filteredProducts.map((product) => {
+              const distillery = product.distillery ? distilleryMap[product.distillery] : null;
 
-                  {/* AI Search Results */}
-                  {aiSearchResult && (
-                    <div className="mt-4 p-6 bg-white rounded-lg border border-amber-200 shadow-lg max-w-md w-full text-left">
-                      <div className="flex justify-between items-start mb-4">
-                        <h4 className="font-bold text-lg text-slate-800">
-                          {aiSearchResult.inDatabase ? "Found in Database!" : "Whisky Identified"}
-                        </h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAiSearchResult(null)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+              return (
+                <Card
+                  key={product.id}
+                  className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
+                  data-testid={`card-product-${product.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                      {/* Product Image */}
+                      <div className="lg:col-span-2">
+                        <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                          {product.productImage ? (
+                            <img
+                              src={product.productImage}
+                              alt={`${product.name} bottle`}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
+                            <Package className="h-12 w-12 mb-2 opacity-50" />
+                            <span className="text-xs text-amber-500 opacity-75">No Image</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Display Image if available */}
-                      {aiSearchResult.whiskyData.image_url && (
-                        <div className="mb-4 w-full h-48 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
-                          <img
-                            src={aiSearchResult.whiskyData.image_url}
-                            alt={aiSearchResult.whiskyData.name}
-                            className="h-full w-full object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      <div className="space-y-3 mb-6">
+                      {/* Main Info */}
+                      <div className="lg:col-span-3 space-y-3">
                         <div>
-                          <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>
-                          <p className="font-medium text-slate-800">{aiSearchResult.whiskyData.name}</p>
+                          <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
+                            {product.name}
+                          </h3>
+                          {distillery && (
+                            <div className="flex items-center text-slate-600 mb-2">
+                              <Building2 className="h-4 w-4 mr-2 text-amber-600" />
+                              <span className="font-medium">{distillery.name}</span>
+                            </div>
+                          )}
+                          {distillery?.region && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
+                              {distillery.region}
+                            </Badge>
+                          )}
                         </div>
-                        {aiSearchResult.whiskyData.distillery && (
-                          <div>
-                            <span className="text-xs font-semibold text-slate-500 uppercase">Distillery</span>
-                            <p className="text-slate-700">{aiSearchResult.whiskyData.distillery}</p>
+                      </div>
+
+                      {/* Technical Details */}
+                      <div className="lg:col-span-2 space-y-2">
+                        {product.abvPercent && (
+                          <div className="flex items-center text-sm text-slate-600">
+                            <Percent className="h-4 w-4 mr-2 text-amber-600" />
+                            <span className="font-medium">{product.abvPercent}% ABV</span>
                           </div>
                         )}
-                        {aiSearchResult.whiskyData.description && (
-                          <div>
-                            <span className="text-xs font-semibold text-slate-500 uppercase">Description</span>
-                            <p className="text-sm text-slate-600 line-clamp-3">{aiSearchResult.whiskyData.description}</p>
+                        {product.volumeCl && (
+                          <div className="text-sm text-slate-600">
+                            <span className="font-medium">Volume:</span> {product.volumeCl}cl
+                          </div>
+                        )}
+                        {product.filtration && (
+                          <div className="text-sm text-slate-600">
+                            <span className="font-medium">Filtration:</span> {product.filtration}
                           </div>
                         )}
                       </div>
 
-                      {aiSearchResult.inDatabase ? (
-                        <Button
-                          onClick={() => handleAddToCollection(aiSearchResult.product)}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add to Collection
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={handleAddAiProduct}
-                          disabled={createProductMutation.isPending}
-                          className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                        >
-                          {createProductMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Adding to Database...
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add to Database & Collection
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {filteredProducts.map((product) => {
-                const distillery = product.distillery ? distilleryMap[product.distillery] : null;
+                      {/* Description & Tasting Notes */}
+                      <div className="lg:col-span-4 space-y-3">
+                        {product.description && (
+                          <p className="text-sm text-slate-600 line-clamp-2">
+                            {product.description}
+                          </p>
+                        )}
 
-                return (
-                  <Card
-                    key={product.id}
-                    className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
-                    data-testid={`card-product-${product.id}`}
-                  >
-                    <CardContent className="p-6">
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* Product Image */}
-                        <div className="lg:col-span-2">
-                          <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
-                            {product.productImage ? (
-                              <img
-                                src={product.productImage}
-                                alt={`${product.name} bottle`}
-                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
-                                }}
-                              />
-                            ) : null}
-                            <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
-                              <Package className="h-12 w-12 mb-2 opacity-50" />
-                              <span className="text-xs text-amber-500 opacity-75">No Image</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Main Info */}
-                        <div className="lg:col-span-3 space-y-3">
-                          <div>
-                            <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
-                              {product.name}
-                            </h3>
-                            {distillery && (
-                              <div className="flex items-center text-slate-600 mb-2">
-                                <Building2 className="h-4 w-4 mr-2 text-amber-600" />
-                                <span className="font-medium">{distillery.name}</span>
-                              </div>
-                            )}
-                            {distillery?.region && (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                                {distillery.region}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Technical Details */}
-                        <div className="lg:col-span-2 space-y-2">
-                          {product.abvPercent && (
-                            <div className="flex items-center text-sm text-slate-600">
-                              <Percent className="h-4 w-4 mr-2 text-amber-600" />
-                              <span className="font-medium">{product.abvPercent}% ABV</span>
-                            </div>
-                          )}
-                          {product.volumeCl && (
-                            <div className="text-sm text-slate-600">
-                              <span className="font-medium">Volume:</span> {product.volumeCl}cl
-                            </div>
-                          )}
-                          {product.filtration && (
-                            <div className="text-sm text-slate-600">
-                              <span className="font-medium">Filtration:</span> {product.filtration}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Description & Tasting Notes */}
-                        <div className="lg:col-span-4 space-y-3">
-                          {product.description && (
-                            <p className="text-sm text-slate-600 line-clamp-2">
-                              {product.description}
-                            </p>
-                          )}
-
-                          {/* Condensed Tasting Notes */}
-                          {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
-                            <div className="space-y-1">
-                              {product.tastingNose && (
-                                <p className="text-xs text-slate-600">
-                                  <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
-                                </p>
-                              )}
-                              {product.tastingTaste && (
-                                <p className="text-xs text-slate-600">
-                                  <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
-                                </p>
-                              )}
-                              {product.tastingFinish && (
-                                <p className="text-xs text-slate-600">
-                                  <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="lg:col-span-1 flex flex-col gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                onClick={() => handleToggleWishlist(product.id)}
-                                disabled={isInCollection(product.id)}
-                                variant="outline"
-                                className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
-                                  ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-                                  : isInWishlist(product.id)
-                                    ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
-                                    : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
-                                  }`}
-                                data-testid={`button-toggle-wishlist-${product.id}`}
-                              >
-                                <Heart
-                                  className={`h-4 w-4 ${isInWishlist(product.id)
-                                    ? "fill-green-600 font-bold stroke-2"
-                                    : ""
-                                    }`}
-                                />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>
-                                {isInCollection(product.id)
-                                  ? "Already in collection"
-                                  : isInWishlist(product.id)
-                                    ? "Remove from wishlist"
-                                    : "Add to wishlist"
-                                }
+                        {/* Condensed Tasting Notes */}
+                        {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
+                          <div className="space-y-1">
+                            {product.tastingNose && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
                               </p>
-                            </TooltipContent>
-                          </Tooltip>
+                            )}
+                            {product.tastingTaste && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
+                              </p>
+                            )}
+                            {product.tastingFinish && (
+                              <p className="text-xs text-slate-600">
+                                <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
+                      {/* Actions */}
+                      <div className="lg:col-span-1 flex flex-col gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              onClick={() => handleToggleWishlist(product.id)}
+                              disabled={isInCollection(product.id)}
+                              variant="outline"
+                              className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
+                                ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                                : isInWishlist(product.id)
+                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
+                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                                }`}
+                              data-testid={`button-toggle-wishlist-${product.id}`}
+                            >
+                              <Heart
+                                className={`h-4 w-4 ${isInWishlist(product.id)
+                                  ? "fill-green-600 font-bold stroke-2"
+                                  : ""
+                                  }`}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              {isInCollection(product.id)
+                                ? "Already in collection"
+                                : isInWishlist(product.id)
+                                  ? "Remove from wishlist"
+                                  : "Add to wishlist"
+                              }
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              onClick={() => handleToggleCollection(product.id)}
+                              className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
+                                ? "bg-green-500 hover:bg-green-600 text-white"
+                                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                                }`}
+                              data-testid={`button-toggle-collection-${product.id}`}
+                            >
+                              {isInCollection(product.id) ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <Plus className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {product.productUrl && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
+                                variant="outline"
                                 size="sm"
-                                onClick={() => handleToggleCollection(product.id)}
-                                className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
-                                  ? "bg-green-500 hover:bg-green-600 text-white"
-                                  : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                                  }`}
-                                data-testid={`button-toggle-collection-${product.id}`}
+                                className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
+                                onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
+                                data-testid={`button-view-product-${product.id}`}
                               >
-                                {isInCollection(product.id) ? (
-                                  <Check className="h-4 w-4" />
-                                ) : (
-                                  <Plus className="h-4 w-4" />
-                                )}
+                                <ExternalLink className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
+                              <p>Visit Website</p>
                             </TooltipContent>
                           </Tooltip>
-
-                          {product.productUrl && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
-                                  onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
-                                  data-testid={`button-view-product-${product.id}`}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Visit Website</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )
-        }
-      </main >
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </main>
 
       {/* Add to Collection Dialog */}
-      < Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen} >
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add to Your Collection</DialogTitle>
@@ -839,7 +834,7 @@ export default function Browse() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog >
-    </div >
+      </Dialog>
+    </div>
   );
 }

@@ -584,6 +584,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/wishlist/toggle", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { productId } = req.body;
+      if (!productId) {
+        return res.status(400).json({ message: "Product ID is required" });
+      }
+
+      const existingUserProduct = await storage.getUserProduct(req.session.userId, productId);
+
+      if (existingUserProduct) {
+        // Toggle wishlist status
+        const updated = await storage.updateUserProduct(existingUserProduct.id, {
+          wishlist: !existingUserProduct.wishlist
+        });
+        res.json(updated);
+      } else {
+        // Create new entry
+        const newItem = await storage.createUserProduct({
+          userId: req.session.userId,
+          productId: productId,
+          wishlist: true,
+          owned: false, // Default to false when just adding to wishlist
+          rating: 0,
+          tastingNotes: ""
+        });
+        res.status(201).json(newItem);
+      }
+    } catch (error) {
+      console.error("Toggle wishlist error:", error);
+      res.status(500).json({ message: "Failed to toggle wishlist" });
+    }
+  });
+
   // App reviews routes
   app.get("/api/reviews", async (req, res) => {
     try {
