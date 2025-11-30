@@ -31,11 +31,11 @@ declare module 'express-session' {
 if (!process.env.ANTHROPIC_API_KEY) {
   console.warn("WARNING: ANTHROPIC_API_KEY is missing from environment variables!");
 } else {
-  console.log("Anthropic API Key loaded: " + process.env.ANTHROPIC_API_KEY.substring(0, 8) + "...");
+  console.log(`Anthropic API Key loaded: ${process.env.ANTHROPIC_API_KEY.substring(0, 8)}... (Length: ${process.env.ANTHROPIC_API_KEY.length})`);
 }
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY?.trim(),
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
