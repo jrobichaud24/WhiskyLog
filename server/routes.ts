@@ -43,7 +43,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
-  }));  // CSRF Protection
+  }));
+
   app.use(cookieParser());
 
   // Configure CSRF middleware
@@ -59,6 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.cookie('XSRF-TOKEN', token);
     next();
   });
+
   // Authentication routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
@@ -1117,6 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Text-based whisky identification endpoint
   app.post("/api/identify-whisky-text", async (req, res) => {
+    console.log(`[DEBUG] /api/identify-whisky-text called with query: ${req.body.query}`);
     if (!req.session.userId) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -1201,7 +1204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await storage.getProducts();
       const distilleries = await storage.getDistilleries();
 
-      const matchingProduct = products.find(product => {
+      let matchingProduct = products.find(product => {
         if (!whiskyData.name) return false;
 
         // Simple matching logic
@@ -1219,6 +1222,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (matchingProduct) {
+        // Update image if missing and available from AI
+        if (!matchingProduct.productImage && whiskyData.image_url) {
+          console.log(`Updating existing product ${matchingProduct.id} with new image URL`);
+          const updatedProduct = await storage.updateProductImage(matchingProduct.id, whiskyData.image_url);
+          if (updatedProduct) {
+            matchingProduct = updatedProduct;
+          }
+        }
+
         // Check if user already has this product
         const existingUserProduct = await storage.getUserProduct(req.session.userId, matchingProduct.id);
 

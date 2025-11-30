@@ -41,6 +41,7 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   bulkCreateProducts(products: InsertProduct[]): Promise<Product[]>;
   bulkDeleteProducts(ids: string[]): Promise<boolean>;
+  updateProductImage(id: string, imageUrl: string): Promise<Product | undefined>;
 
   // User product operations
   getUserProducts(userId: string): Promise<UserProduct[]>;
@@ -152,6 +153,15 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(products.id, ids))
       .returning();
     return result.length > 0;
+  }
+
+  async updateProductImage(id: string, imageUrl: string): Promise<Product | undefined> {
+    const [product] = await db
+      .update(products)
+      .set({ productImage: imageUrl })
+      .where(eq(products.id, id))
+      .returning();
+    return product || undefined;
   }
 
   // User operations
@@ -553,6 +563,14 @@ export class MemStorage implements IStorage {
   async bulkDeleteProducts(ids: string[]): Promise<boolean> {
     ids.forEach(id => this.products.delete(id));
     return true;
+  }
+
+  async updateProductImage(id: string, imageUrl: string): Promise<Product | undefined> {
+    const product = this.products.get(id);
+    if (!product) return undefined;
+    product.productImage = imageUrl;
+    this.products.set(id, product);
+    return product;
   }
 
   // User product operations (stub implementations)
