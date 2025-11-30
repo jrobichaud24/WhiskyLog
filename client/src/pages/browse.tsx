@@ -110,12 +110,20 @@ export default function Browse() {
     setShowWishlistOnly(false);
   };
 
+  // Initialize from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("filter") === "wishlist") {
+      setShowWishlistOnly(true);
+    }
+  }, []);
+
   // Mutations
   const identifyWhiskyMutation = useMutation({
     mutationFn: async (text: string) => {
       const res = await apiRequest("/api/identify-whisky-text", {
         method: "POST",
-        body: JSON.stringify({ text }),
+        body: { text },
       });
       return res.json();
     },
@@ -138,7 +146,7 @@ export default function Browse() {
       if (!aiSearchResult) return;
       const res = await apiRequest("/api/products", {
         method: "POST",
-        body: JSON.stringify(aiSearchResult.whiskyData),
+        body: aiSearchResult.whiskyData,
       });
       return res.json();
     },
@@ -160,7 +168,7 @@ export default function Browse() {
     mutationFn: async (data: any) => {
       return await apiRequest("/api/user-products", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: data,
       });
     },
     onSuccess: () => {
@@ -184,7 +192,7 @@ export default function Browse() {
     mutationFn: async (productId: number) => {
       return await apiRequest("/api/wishlist/toggle", {
         method: "POST",
-        body: JSON.stringify({ productId }),
+        body: { productId },
       });
     },
     onSuccess: () => {
