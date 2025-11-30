@@ -74,17 +74,13 @@ export default function Browse() {
     enabled: !!user,
   });
 
-  const { data: wishlist = [] } = useQuery<any[]>({
-    queryKey: ["/api/wishlist"],
-    enabled: !!user,
-  });
-
   // Derived Data
   const distilleryMap = distilleries.reduce((acc, d) => ({ ...acc, [d.id]: d }), {} as Record<string, Distillery>);
   const regions = Array.from(new Set(distilleries.map(d => d.region).filter(Boolean)));
 
-  const isInCollection = (productId: string) => userProducts.some(up => up.productId === productId);
-  const isInWishlist = (productId: string) => wishlist.some(w => w.productId === productId);
+  // Check if product is in collection (owned) or wishlist
+  const isInCollection = (productId: string) => userProducts.some(up => up.productId === productId && up.owned);
+  const isInWishlist = (productId: string) => userProducts.some(up => up.productId === productId && up.wishlist);
 
   const filteredProducts = products.filter(product => {
     const distillery = product.distillery ? distilleryMap[product.distillery] : null;
@@ -196,7 +192,8 @@ export default function Browse() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
+      // Invalidate user-products to update wishlist status
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
     },
   });
 
