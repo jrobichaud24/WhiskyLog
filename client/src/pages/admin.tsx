@@ -317,7 +317,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           </AlertDialog>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex space-x-3">
+          <div className="hidden lg:flex space-x-3">
             <Button
               variant="destructive"
               className="bg-red-500 hover:bg-red-600 text-white"
@@ -347,7 +347,7 @@ function DistilleriesManager({ distilleries, isLoading }: { distilleries: Distil
           </div>
 
           {/* Mobile Actions */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-amber-600">
@@ -1107,7 +1107,7 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
           </AlertDialog>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex space-x-3">
+          <div className="hidden lg:flex space-x-3">
             <Button
               variant="destructive"
               className="bg-red-500 hover:bg-red-600 text-white"
@@ -1137,7 +1137,7 @@ function ProductsManager({ products, distilleries, isLoading }: { products: Prod
           </div>
 
           {/* Mobile Actions */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-amber-600">

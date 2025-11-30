@@ -22,453 +22,8 @@ import {
   ExternalLink,
   Loader2,
   Building2,
-  DollarSign,
-  Percent,
-  Plus,
-  Star,
-  Heart,
-  Check,
-  Package,
-  Sparkles
-} from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useLogout } from "@/hooks/useLogout";
-import { getRatingLabel } from "@/lib/rating-utils";
-import type { Product, Distillery, User } from "@shared/schema";
-
-export default function Browse() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [tastingNotes, setTastingNotes] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const { user, isLoading: userLoading } = useAuth();
-
-  // Parse query parameters
-  const searchParams = new URLSearchParams(window.location.search);
-  const initialFilter = searchParams.get("filter");
-  const [showWishlistOnly, setShowWishlistOnly] = useState(initialFilter === "wishlist");
-
-  // Search and filter state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDistillery, setSelectedDistillery] = useState("all");
-  const [minABV, setMinABV] = useState("");
-  const [maxABV, setMaxABV] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("all");
-
-  // AI Search state
-  const [aiSearchResult, setAiSearchResult] = useState<any>(null);
-  const [isAiSearching, setIsAiSearching] = useState(false);
-
-  // Data queries
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"]
-  });
-
-  const { data: distilleries = [] } = useQuery<Distillery[]>({
-    queryKey: ["/api/distilleries"]
-  });
-
-  // Get user's collection to check wishlist status
-  const { data: userProducts = [] } = useQuery<any[]>({
-    queryKey: ["/api/user-products"],
-    enabled: !!user,
-  });
-
-  const logoutMutation = useLogout();
-
-  useEffect(() => {
-    if (!userLoading && !user) {
-      setLocation("/login");
-    }
-  }, [user, userLoading, setLocation]);
-
-  // Create distillery map for lookups
-  const distilleryMap = distilleries.reduce((acc, distillery) => {
-    acc[distillery.id] = distillery;
-    return acc;
-  }, {} as Record<string, Distillery>);
-
-  // Filter products based on search criteria
-  const filteredProducts = products.filter(product => {
-    const distillery = product.distillery ? distilleryMap[product.distillery] : null;
-
-    // Search term filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesName = product.name?.toLowerCase().includes(searchLower);
-      const matchesDistillery = distillery?.name?.toLowerCase().includes(searchLower);
-      if (!matchesName && !matchesDistillery) return false;
-    }
-
-    // Distillery filter
-    if (selectedDistillery && selectedDistillery !== "all" && product.distillery !== selectedDistillery) {
-      return false;
-    }
-
-    // ABV filters
-    if (minABV && product.abvPercent && parseFloat(product.abvPercent) < parseFloat(minABV)) {
-      return false;
-    }
-    if (maxABV && product.abvPercent && parseFloat(product.abvPercent) > parseFloat(maxABV)) {
-      return false;
-    }
-
-    // Region filter
-    if (selectedRegion && selectedRegion !== "all" && distillery?.region !== selectedRegion) {
-      return false;
-    }
-
-    // Wishlist filter
-    if (showWishlistOnly) {
-      const inWishlist = (userProducts as any[]).some((up: any) => up.productId === product.id && up.wishlist);
-      if (!inWishlist) return false;
-    }
-
-    return true;
-  });
-
-  // Get unique regions from distilleries
-  const regions = Array.from(new Set(distilleries.map(d => d.region))).filter(region => region && region.trim() !== "").sort();
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedDistillery("all");
-    setMinABV("");
-    setMaxABV("");
-    setSelectedRegion("all");
-    setShowWishlistOnly(false);
-    setAiSearchResult(null);
-  };
-
-  const hasActiveFilters = searchTerm || (selectedDistillery !== "all") || minABV || maxABV || (selectedRegion !== "all") || showWishlistOnly;
-
-  // Add to collection mutation
-  const addToCollectionMutation = useMutation({
-    mutationFn: async (data: { productId: string; rating: number; tastingNotes: string }) => {
-      return await apiRequest(`/api/user-products`, {
-        method: "POST",
-        body: {
-          productId: data.productId,
-          rating: data.rating,
-          tastingNotes: data.tastingNotes,
-          owned: true
-        }
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Added to Collection",
-        description: `${selectedProduct?.name} has been added to your personal collection!`,
-      });
-      setIsDialogOpen(false);
-      setSelectedProduct(null);
-      setRating(0);
-      setTastingNotes("");
-      // Refresh user products to update UI
-      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to Add",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Toggle wishlist mutation
-  const toggleWishlistMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const userProduct = (userProducts as any[]).find((up: any) => up.productId === productId);
-
-      if (userProduct && userProduct.wishlist) {
-        // Remove from wishlist
-        return await apiRequest(`/api/user-products/${userProduct.id}`, {
-          method: "DELETE"
-        });
-      } else if (userProduct && userProduct.owned) {
-        // Already in collection, can't add to wishlist
-        throw new Error("ALREADY_IN_COLLECTION");
-      } else {
-        // Add to wishlist
-        return await apiRequest(`/api/user-products`, {
-          method: "POST",
-          body: {
-            productId,
-            wishlist: true,
-            owned: false
-          }
-        });
-      }
-    },
-    onSuccess: (_, productId) => {
-      const product = products?.find((p: Product) => p.id === productId);
-      const wasInWishlist = isInWishlist(productId);
-
-      toast({
-        title: wasInWishlist ? "Removed from Wishlist" : "Added to Wishlist",
-        description: `${product?.name} has been ${wasInWishlist ? "removed from" : "added to"} your wishlist!`,
-      });
-      // Refresh user products to update UI
-      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
-    },
-    onError: (error: Error) => {
-      if (error.message === "ALREADY_IN_COLLECTION") {
-        toast({
-          title: "Already in Collection",
-          description: "This whisky is already in your personal collection.",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Failed to Update",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  });
-
-  // Remove from collection mutation
-  const removeFromCollectionMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const userProduct = (userProducts as any[]).find((up: any) => up.productId === productId && up.owned);
-      if (!userProduct) {
-        throw new Error("Product not found in collection");
-      }
-
-      return await apiRequest(`/api/user-products/${userProduct.id}`, {
-        method: "DELETE"
-      });
-    },
-    onSuccess: (_, productId) => {
-      const product = products?.find((p: Product) => p.id === productId);
-      toast({
-        title: "Removed from Collection",
-        description: `${product?.name} has been removed from your collection.`,
-      });
-      // Refresh user products to update UI
-      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to Remove",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  // AI Search Mutation
-  const identifyWhiskyMutation = useMutation({
-    mutationFn: async (query: string) => {
-      return await apiRequest("/api/identify-whisky-text", {
-        method: "POST",
-        body: { query }
-      });
-    },
-    onSuccess: (result) => {
-      setAiSearchResult(result);
-      if (result.success) {
-        toast({
-          title: result.inDatabase ? "Whisky Found!" : "Whisky Identified",
-          description: result.message,
-        });
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Search Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Create product from AI result
-  const createProductMutation = useMutation({
-    mutationFn: async (whiskyData: any) => {
-      return await apiRequest("/api/analyze-bottle/create-product", {
-        method: "POST",
-        body: { whiskyData }
-      });
-    },
-    onSuccess: (result) => {
-      toast({
-        title: "Success!",
-        description: result.message,
-      });
-      // Clear AI result and refresh products
-      setAiSearchResult(null);
-      setSearchTerm(""); // Clear search to show the new product
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/distilleries"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to Add",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleAiSearch = () => {
-    if (!searchTerm) return;
-    setIsAiSearching(true);
-    identifyWhiskyMutation.mutate(searchTerm, {
-      onSettled: () => setIsAiSearching(false)
-    });
-  };
-
-  const handleAddAiProduct = () => {
-    if (aiSearchResult?.whiskyData) {
-      createProductMutation.mutate(aiSearchResult.whiskyData);
-    }
-  };
-
-  const handleAddToCollection = (product: Product) => {
-    setSelectedProduct(product);
-    setIsDialogOpen(true);
-    setRating(0);
-    setTastingNotes("");
-  };
-
-  const handleSubmitCollection = () => {
-    if (!selectedProduct || rating === 0) {
-      toast({
-        title: "Rating Required",
-        description: "Please provide a rating before adding to your collection.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    addToCollectionMutation.mutate({
-      productId: selectedProduct.id,
-      rating,
-      tastingNotes
-    });
-  };
-
-  const handleToggleWishlist = (productId: string) => {
-    toggleWishlistMutation.mutate(productId);
-  };
-
-  const handleToggleCollection = (productId: string) => {
-    if (isInCollection(productId)) {
-      removeFromCollectionMutation.mutate(productId);
-    } else {
-      handleAddToCollection(products.find(p => p.id === productId)!);
-    }
-  };
-
-  // Helper function to check if product is in wishlist
-  const isInWishlist = (productId: string) => {
-    return (userProducts as any[]).some((up: any) => up.productId === productId && up.wishlist);
-  };
-
-  // Helper function to check if product is in collection (owned)
-  const isInCollection = (productId: string) => {
-    return (userProducts as any[]).some((up: any) => up.productId === productId && up.owned);
-  };
-
-  if (userLoading || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-cream to-warmwhite flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-lg overflow-hidden mx-auto mb-4">
-            <img
-              src="/logo.png"
-              alt="The Dram Journal Logo"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <p className="text-gray-600">Loading your whisky collection...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
-      {/* Personal Header - same style as dashboard */}
-      <header className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden">
-        {/* Background Pattern */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                onClick={() => setLocation("/dashboard")}
-                className="text-amber-200 hover:bg-amber-500/20 hover:text-white p-2"
-                data-testid="button-back-dashboard"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="w-16 h-16 rounded-xl overflow-hidden bg-amber-500/20 p-2">
-                <img
-                  src="/logo.png"
-                  alt="The Dram Journal Logo"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              </div>
-              <div>
-                <h1 className="font-playfair text-4xl font-bold text-white mb-1">
-                  Browse Collection
-                </h1>
-                <p className="text-amber-200 text-lg">
-                  Discover whiskies for your journal, {user.firstName || user.username}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg border-0"
-                onClick={() => {
-                  toast({
-                    title: "Add Whisky",
-                    description: "Use the browse list below to add whiskies to your collection by clicking the plus button next to any whisky.",
-                  });
-                }}
-                data-testid="button-add-whisky"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Whisky to Collection
-              </Button>
-
-              <Button
-                variant="outline"
-                className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Search and Filter Section */}
-        <Card className="mb-8 bg-white/90 backdrop-blur-sm shadow-xl border-0">
+        {/* Search and Filter Section */ }
+  < Card className = "mb-8 bg-white/90 backdrop-blur-sm shadow-xl border-0" >
           <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-lg border-b border-amber-100">
             <CardTitle className="flex items-center text-2xl text-slate-800">
               <Search className="h-6 w-6 mr-3 text-amber-600" />
@@ -569,424 +124,426 @@ export default function Browse() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card >
 
-        {/* Products Grid */}
-        {productsLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-amber-600" />
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <Card className="bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <Search className="h-16 w-16 mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
-              <p className="text-gray-600 mb-6">
-                {hasActiveFilters
-                  ? "Try adjusting your filters to find more whiskies."
-                  : "No whiskies are currently available in the collection."
-                }
+  {/* Products Grid */ }
+{
+  productsLoading ? (
+    <div className="flex justify-center items-center h-64">
+      <Loader2 className="h-12 w-12 animate-spin text-amber-600" />
+    </div>
+  ) : filteredProducts.length === 0 ? (
+    <Card className="bg-white/90 backdrop-blur-sm">
+      <CardContent className="p-12 text-center">
+        <div className="text-gray-400 mb-4">
+          <Search className="h-16 w-16 mx-auto" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">No whiskies found</h3>
+        <p className="text-gray-600 mb-6">
+          {hasActiveFilters
+            ? "Try adjusting your filters to find more whiskies."
+            : "No whiskies are currently available in the collection."
+          }
+        </p>
+
+        <div className="flex flex-col items-center gap-4">
+          {hasActiveFilters && (
+            <Button
+              onClick={clearFilters}
+              variant="outline"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              data-testid="button-clear-all-filters"
+            >
+              Clear All Filters
+            </Button>
+          )}
+
+          {/* AI Search Fallback */}
+          {searchTerm && !aiSearchResult && (
+            <div className="mt-4 p-6 bg-amber-50 rounded-lg border border-amber-100 max-w-md w-full">
+              <h4 className="font-semibold text-amber-800 mb-2 flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Can't find what you're looking for?
+              </h4>
+              <p className="text-sm text-amber-700 mb-4">
+                Use our AI to search the global whisky database and add it to the system.
               </p>
-
-              <div className="flex flex-col items-center gap-4">
-                {hasActiveFilters && (
-                  <Button
-                    onClick={clearFilters}
-                    variant="outline"
-                    className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                    data-testid="button-clear-all-filters"
-                  >
-                    Clear All Filters
-                  </Button>
+              <Button
+                onClick={handleAiSearch}
+                disabled={isAiSearching}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+              >
+                {isAiSearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Searching Global Database...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Search for "{searchTerm}" with AI
+                  </>
                 )}
+              </Button>
+            </div>
+          )}
 
-                {/* AI Search Fallback */}
-                {searchTerm && !aiSearchResult && (
-                  <div className="mt-4 p-6 bg-amber-50 rounded-lg border border-amber-100 max-w-md w-full">
-                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center justify-center gap-2">
-                      <Sparkles className="h-4 w-4" />
-                      Can't find what you're looking for?
-                    </h4>
-                    <p className="text-sm text-amber-700 mb-4">
-                      Use our AI to search the global whisky database and add it to the system.
-                    </p>
-                    <Button
-                      onClick={handleAiSearch}
-                      disabled={isAiSearching}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                    >
-                      {isAiSearching ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Searching Global Database...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Search for "{searchTerm}" with AI
-                        </>
-                      )}
-                    </Button>
+          {/* AI Search Results */}
+          {aiSearchResult && (
+            <div className="mt-4 p-6 bg-white rounded-lg border border-amber-200 shadow-lg max-w-md w-full text-left">
+              <div className="flex justify-between items-start mb-4">
+                <h4 className="font-bold text-lg text-slate-800">
+                  {aiSearchResult.inDatabase ? "Found in Database!" : "Whisky Identified"}
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAiSearchResult(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Display Image if available */}
+              {aiSearchResult.whiskyData.image_url && (
+                <div className="mb-4 w-full h-48 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                  <img
+                    src={aiSearchResult.whiskyData.image_url}
+                    alt={aiSearchResult.whiskyData.name}
+                    className="h-full w-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-3 mb-6">
+                <div>
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>
+                  <p className="font-medium text-slate-800">{aiSearchResult.whiskyData.name}</p>
+                </div>
+                {aiSearchResult.whiskyData.distillery && (
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase">Distillery</span>
+                    <p className="text-slate-700">{aiSearchResult.whiskyData.distillery}</p>
                   </div>
                 )}
+                {aiSearchResult.whiskyData.description && (
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase">Description</span>
+                    <p className="text-sm text-slate-600 line-clamp-3">{aiSearchResult.whiskyData.description}</p>
+                  </div>
+                )}
+              </div>
 
-                {/* AI Search Results */}
-                {aiSearchResult && (
-                  <div className="mt-4 p-6 bg-white rounded-lg border border-amber-200 shadow-lg max-w-md w-full text-left">
-                    <div className="flex justify-between items-start mb-4">
-                      <h4 className="font-bold text-lg text-slate-800">
-                        {aiSearchResult.inDatabase ? "Found in Database!" : "Whisky Identified"}
-                      </h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAiSearchResult(null)}
-                        className="h-6 w-6 p-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+              {aiSearchResult.inDatabase ? (
+                <Button
+                  onClick={() => handleAddToCollection(aiSearchResult.product)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add to Collection
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleAddAiProduct}
+                  disabled={createProductMutation.isPending}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {createProductMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding to Database...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to Database & Collection
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="space-y-4">
+      {filteredProducts.map((product) => {
+        const distillery = product.distillery ? distilleryMap[product.distillery] : null;
+
+        return (
+          <Card
+            key={product.id}
+            className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
+            data-testid={`card-product-${product.id}`}
+          >
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Product Image */}
+                <div className="lg:col-span-2">
+                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
+                    {product.productImage ? (
+                      <img
+                        src={product.productImage}
+                        alt={`${product.name} bottle`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
+                      <Package className="h-12 w-12 mb-2 opacity-50" />
+                      <span className="text-xs text-amber-500 opacity-75">No Image</span>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Display Image if available */}
-                    {aiSearchResult.whiskyData.image_url && (
-                      <div className="mb-4 w-full h-48 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
-                        <img
-                          src={aiSearchResult.whiskyData.image_url}
-                          alt={aiSearchResult.whiskyData.name}
-                          className="h-full w-full object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                {/* Main Info */}
+                <div className="lg:col-span-3 space-y-3">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
+                      {product.name}
+                    </h3>
+                    {distillery && (
+                      <div className="flex items-center text-slate-600 mb-2">
+                        <Building2 className="h-4 w-4 mr-2 text-amber-600" />
+                        <span className="font-medium">{distillery.name}</span>
                       </div>
                     )}
+                    {distillery?.region && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
+                        {distillery.region}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
 
-                    <div className="space-y-3 mb-6">
-                      <div>
-                        <span className="text-xs font-semibold text-slate-500 uppercase">Name</span>
-                        <p className="font-medium text-slate-800">{aiSearchResult.whiskyData.name}</p>
-                      </div>
-                      {aiSearchResult.whiskyData.distillery && (
-                        <div>
-                          <span className="text-xs font-semibold text-slate-500 uppercase">Distillery</span>
-                          <p className="text-slate-700">{aiSearchResult.whiskyData.distillery}</p>
-                        </div>
+                {/* Technical Details */}
+                <div className="lg:col-span-2 space-y-2">
+                  {product.abvPercent && (
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Percent className="h-4 w-4 mr-2 text-amber-600" />
+                      <span className="font-medium">{product.abvPercent}% ABV</span>
+                    </div>
+                  )}
+                  {product.volumeCl && (
+                    <div className="text-sm text-slate-600">
+                      <span className="font-medium">Volume:</span> {product.volumeCl}cl
+                    </div>
+                  )}
+                  {product.filtration && (
+                    <div className="text-sm text-slate-600">
+                      <span className="font-medium">Filtration:</span> {product.filtration}
+                    </div>
+                  )}
+                </div>
+
+                {/* Description & Tasting Notes */}
+                <div className="lg:col-span-4 space-y-3">
+                  {product.description && (
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {product.description}
+                    </p>
+                  )}
+
+                  {/* Condensed Tasting Notes */}
+                  {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
+                    <div className="space-y-1">
+                      {product.tastingNose && (
+                        <p className="text-xs text-slate-600">
+                          <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
+                        </p>
                       )}
-                      {aiSearchResult.whiskyData.description && (
-                        <div>
-                          <span className="text-xs font-semibold text-slate-500 uppercase">Description</span>
-                          <p className="text-sm text-slate-600 line-clamp-3">{aiSearchResult.whiskyData.description}</p>
-                        </div>
+                      {product.tastingTaste && (
+                        <p className="text-xs text-slate-600">
+                          <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
+                        </p>
+                      )}
+                      {product.tastingFinish && (
+                        <p className="text-xs text-slate-600">
+                          <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
+                        </p>
                       )}
                     </div>
+                  )}
+                </div>
 
-                    {aiSearchResult.inDatabase ? (
+                {/* Actions */}
+                <div className="lg:col-span-1 flex flex-col gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
-                        onClick={() => handleAddToCollection(aiSearchResult.product)}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                        onClick={() => handleToggleWishlist(product.id)}
+                        disabled={isInCollection(product.id)}
+                        variant="outline"
+                        className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
+                          ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                          : isInWishlist(product.id)
+                            ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
+                            : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                          }`}
+                        data-testid={`button-toggle-wishlist-${product.id}`}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to Collection
+                        <Heart
+                          className={`h-4 w-4 ${isInWishlist(product.id)
+                            ? "fill-green-600 font-bold stroke-2"
+                            : ""
+                            }`}
+                        />
                       </Button>
-                    ) : (
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        {isInCollection(product.id)
+                          ? "Already in collection"
+                          : isInWishlist(product.id)
+                            ? "Remove from wishlist"
+                            : "Add to wishlist"
+                        }
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
-                        onClick={handleAddAiProduct}
-                        disabled={createProductMutation.isPending}
-                        className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                        size="sm"
+                        onClick={() => handleToggleCollection(product.id)}
+                        className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
+                          ? "bg-green-500 hover:bg-green-600 text-white"
+                          : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                          }`}
+                        data-testid={`button-toggle-collection-${product.id}`}
                       >
-                        {createProductMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Adding to Database...
-                          </>
+                        {isInCollection(product.id) ? (
+                          <Check className="h-4 w-4" />
                         ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add to Database & Collection
-                          </>
+                          <Plus className="h-4 w-4" />
                         )}
                       </Button>
-                    )}
-                  </div>
-                )}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {product.productUrl && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
+                          onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
+                          data-testid={`button-view-product-${product.id}`}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Visit Website</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
-        ) : (
+        );
+      })}
+    </div>
+  )
+}
+      </main >
+
+  {/* Add to Collection Dialog */ }
+  < Dialog open = { isDialogOpen } onOpenChange = { setIsDialogOpen } >
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Add to Your Collection</DialogTitle>
+        <DialogDescription>
+          {selectedProduct && (
+            <>Add <strong>{selectedProduct.name}</strong> to your personal whisky journal with a rating and notes.</>
+          )}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 py-4">
+        {/* Rating Section */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Your Rating *</Label>
           <div className="space-y-4">
-            {filteredProducts.map((product) => {
-              const distillery = product.distillery ? distilleryMap[product.distillery] : null;
-
-              return (
-                <Card
-                  key={product.id}
-                  className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
-                  data-testid={`card-product-${product.id}`}
-                >
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                      {/* Product Image */}
-                      <div className="lg:col-span-2">
-                        <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
-                          {product.productImage ? (
-                            <img
-                              src={product.productImage}
-                              alt={`${product.name} bottle`}
-                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
-                            <Package className="h-12 w-12 mb-2 opacity-50" />
-                            <span className="text-xs text-amber-500 opacity-75">No Image</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Main Info */}
-                      <div className="lg:col-span-3 space-y-3">
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
-                            {product.name}
-                          </h3>
-                          {distillery && (
-                            <div className="flex items-center text-slate-600 mb-2">
-                              <Building2 className="h-4 w-4 mr-2 text-amber-600" />
-                              <span className="font-medium">{distillery.name}</span>
-                            </div>
-                          )}
-                          {distillery?.region && (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                              {distillery.region}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Technical Details */}
-                      <div className="lg:col-span-2 space-y-2">
-                        {product.abvPercent && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <Percent className="h-4 w-4 mr-2 text-amber-600" />
-                            <span className="font-medium">{product.abvPercent}% ABV</span>
-                          </div>
-                        )}
-                        {product.volumeCl && (
-                          <div className="text-sm text-slate-600">
-                            <span className="font-medium">Volume:</span> {product.volumeCl}cl
-                          </div>
-                        )}
-                        {product.filtration && (
-                          <div className="text-sm text-slate-600">
-                            <span className="font-medium">Filtration:</span> {product.filtration}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Description & Tasting Notes */}
-                      <div className="lg:col-span-4 space-y-3">
-                        {product.description && (
-                          <p className="text-sm text-slate-600 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-
-                        {/* Condensed Tasting Notes */}
-                        {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
-                          <div className="space-y-1">
-                            {product.tastingNose && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                            {product.tastingTaste && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                            {product.tastingFinish && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="lg:col-span-1 flex flex-col gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => handleToggleWishlist(product.id)}
-                              disabled={isInCollection(product.id)}
-                              variant="outline"
-                              className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
-                                ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-                                : isInWishlist(product.id)
-                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
-                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
-                                }`}
-                              data-testid={`button-toggle-wishlist-${product.id}`}
-                            >
-                              <Heart
-                                className={`h-4 w-4 ${isInWishlist(product.id)
-                                  ? "fill-green-600 font-bold stroke-2"
-                                  : ""
-                                  }`}
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              {isInCollection(product.id)
-                                ? "Already in collection"
-                                : isInWishlist(product.id)
-                                  ? "Remove from wishlist"
-                                  : "Add to wishlist"
-                              }
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => handleToggleCollection(product.id)}
-                              className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
-                                ? "bg-green-500 hover:bg-green-600 text-white"
-                                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                                }`}
-                              data-testid={`button-toggle-collection-${product.id}`}
-                            >
-                              {isInCollection(product.id) ? (
-                                <Check className="h-4 w-4" />
-                              ) : (
-                                <Plus className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {product.productUrl && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
-                                onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
-                                data-testid={`button-view-product-${product.id}`}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Visit Website</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      {/* Add to Collection Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add to Your Collection</DialogTitle>
-            <DialogDescription>
-              {selectedProduct && (
-                <>Add <strong>{selectedProduct.name}</strong> to your personal whisky journal with a rating and notes.</>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Rating Section */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Your Rating *</Label>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-amber-600">{rating > 0 ? rating : "-"}</span>
-                  <span className={`text-sm font-medium px-3 py-1 rounded-full ${rating > 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"
-                    }`}>
-                    {getRatingLabel(rating)}
-                  </span>
-                </div>
-                <div className="relative pt-2 pb-6">
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={rating || 5} // Default visual position to middle if 0
-                    onChange={(e) => setRating(parseInt(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
-                    data-testid="slider-rating"
-                  />
-                  <div className="flex justify-between text-xs text-slate-400 mt-2 px-1">
-                    <span>1</span>
-                    <span>5</span>
-                    <span>10</span>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-amber-600">{rating > 0 ? rating : "-"}</span>
+              <span className={`text-sm font-medium px-3 py-1 rounded-full ${rating > 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"
+                }`}>
+                {getRatingLabel(rating)}
+              </span>
+            </div>
+            <div className="relative pt-2 pb-6">
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={rating || 5} // Default visual position to middle if 0
+                onChange={(e) => setRating(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                data-testid="slider-rating"
+              />
+              <div className="flex justify-between text-xs text-slate-400 mt-2 px-1">
+                <span>1</span>
+                <span>5</span>
+                <span>10</span>
               </div>
             </div>
-
-            {/* Tasting Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="tastingNotes" className="text-sm font-medium">
-                Personal Tasting Notes (Optional)
-              </Label>
-              <Textarea
-                id="tastingNotes"
-                placeholder="Share your thoughts about this whisky... aroma, taste, finish, or any personal observations."
-                value={tastingNotes}
-                onChange={(e) => setTastingNotes(e.target.value)}
-                className="resize-none"
-                rows={3}
-                data-testid="textarea-tasting-notes"
-              />
-            </div>
           </div>
+        </div>
 
-          <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              data-testid="button-cancel-add"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitCollection}
-              disabled={rating === 0 || addToCollectionMutation.isPending}
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
-              data-testid="button-confirm-add"
-            >
-              {addToCollectionMutation.isPending ? "Adding..." : "Add to Collection"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Tasting Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="tastingNotes" className="text-sm font-medium">
+            Personal Tasting Notes (Optional)
+          </Label>
+          <Textarea
+            id="tastingNotes"
+            placeholder="Share your thoughts about this whisky... aroma, taste, finish, or any personal observations."
+            value={tastingNotes}
+            onChange={(e) => setTastingNotes(e.target.value)}
+            className="resize-none"
+            rows={3}
+            data-testid="textarea-tasting-notes"
+          />
+        </div>
+      </div>
+
+      <DialogFooter className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setIsDialogOpen(false)}
+          data-testid="button-cancel-add"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmitCollection}
+          disabled={rating === 0 || addToCollectionMutation.isPending}
+          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+          data-testid="button-confirm-add"
+        >
+          {addToCollectionMutation.isPending ? "Adding..." : "Add to Collection"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+      </Dialog >
+    </div >
   );
 }

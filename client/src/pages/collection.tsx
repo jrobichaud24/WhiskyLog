@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,9 @@ import {
   Percent,
   Star,
   Trash2,
-  Calendar
+  Calendar,
+  Menu,
+  X
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogout } from "@/hooks/useLogout";
@@ -26,6 +28,7 @@ import { getRatingLabel, getRatingColor } from "@/lib/rating-utils";
 import type { Product, Distillery, User } from "@shared/schema";
 
 export default function Collection() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -127,12 +130,12 @@ export default function Collection() {
         />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4 w-full md:w-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 onClick={() => setLocation("/dashboard")}
-                className="text-amber-200 hover:bg-amber-500/20 hover:text-white p-2 shrink-0"
+                className="text-amber-200 hover:bg-amber-500/20 hover:text-white p-2 shrink-0 hidden md:flex"
                 data-testid="button-back-dashboard"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -153,17 +156,52 @@ export default function Collection() {
                 </p>
               </div>
             </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-3">
+              <Button
+                variant="outline"
+                className="border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
             <Button
-              variant="outline"
-              className="w-full md:w-auto border-amber-200/50 text-amber-200 hover:bg-amber-500/20 hover:text-white border-2"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-amber-500 hover:text-amber-400 hover:bg-slate-800"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-slate-700 pt-4 space-y-3 animate-in slide-in-from-top-2">
+              <Button
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white justify-start"
+                onClick={() => setLocation("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <Button
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white justify-start"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 

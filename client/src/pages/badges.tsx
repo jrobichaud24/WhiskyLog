@@ -2,13 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Award, Lock } from "lucide-react";
+import { ArrowLeft, Award, Lock, Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Badge, UserBadge } from "@shared/schema";
+import { useState } from "react";
 
 export default function Badges() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: allBadges = [] } = useQuery<Badge[]>({
     queryKey: ["/api/badges"],
@@ -26,17 +28,45 @@ export default function Badges() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cream to-warmwhite">
       <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="hidden md:block">
+                <Button
+                  variant="ghost"
+                  className="text-slate-300 hover:text-white hover:bg-slate-700/50 mr-4"
+                  onClick={() => setLocation("/dashboard")}
+                >
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <h1 className="text-2xl font-playfair font-bold">Your Badge Collection</h1>
+            </div>
+
+            {/* Mobile Menu Button */}
             <Button
               variant="ghost"
-              className="text-slate-300 hover:text-white hover:bg-slate-700/50 mr-4"
-              onClick={() => setLocation("/dashboard")}
+              size="icon"
+              className="md:hidden text-amber-500 hover:text-amber-400 hover:bg-slate-800"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Dashboard
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
-            <h1 className="text-2xl font-playfair font-bold">Your Badge Collection</h1>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-slate-700 pt-4 space-y-3 animate-in slide-in-from-top-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
+                onClick={() => setLocation("/dashboard")}
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Back to Dashboard
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
