@@ -989,7 +989,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Analyze the image with Anthropic
       const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-3-sonnet-20240229",
         max_tokens: 1024,
         messages: [
           {
@@ -1130,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Analyze the text query with Anthropic
       const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20240620",
+        model: "claude-3-sonnet-20240229",
         max_tokens: 1024,
         messages: [
           {
