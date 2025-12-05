@@ -121,7 +121,7 @@ export default function Browse() {
         method: "POST",
         body: { query: text },
       });
-      return res.json();
+      return res;
     },
     onSuccess: (data) => {
       setAiSearchResult(data);
@@ -140,11 +140,11 @@ export default function Browse() {
   const createProductMutation = useMutation({
     mutationFn: async () => {
       if (!aiSearchResult) return;
-      const res = await apiRequest("/api/products", {
+      const res = await apiRequest("/api/analyze-bottle/create-product", {
         method: "POST",
-        body: aiSearchResult.whiskyData,
+        body: { whiskyData: aiSearchResult.whiskyData },
       });
-      return res.json();
+      return res;
     },
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
