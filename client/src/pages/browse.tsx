@@ -119,7 +119,7 @@ export default function Browse() {
     mutationFn: async (text: string) => {
       const res = await apiRequest("/api/identify-whisky-text", {
         method: "POST",
-        body: { text },
+        body: { query: text },
       });
       return res.json();
     },
