@@ -146,16 +146,13 @@ export default function Browse() {
       });
       return res;
     },
-    onSuccess: (newProduct) => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setAiSearchResult({ ...aiSearchResult, inDatabase: true, product: newProduct });
-      handleAddToCollection(newProduct);
-    },
-    onError: (error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user-products"] });
+      setAiSearchResult(null);
       toast({
-        title: "Failed to create product",
-        description: error.message,
-        variant: "destructive",
+        title: "Success",
+        description: response.message || "Whisky added to database and your collection.",
       });
     },
   });
@@ -222,7 +219,6 @@ export default function Browse() {
       rating,
       tastingNotes,
       owned: true,
-      earnedAt: new Date().toISOString(),
     });
   };
 

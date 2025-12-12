@@ -509,7 +509,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userProduct = await storage.createUserProduct(validatedData);
 
       // Check for badges
-      await BadgeService.checkAndAwardBadges(req.session.userId);
+      try {
+        await BadgeService.checkAndAwardBadges(req.session.userId);
+      } catch (badgeError) {
+        console.error("Error checking badges:", badgeError);
+        // Continue execution - don't fail the request just because badges failed
+      }
 
       res.status(201).json(userProduct);
     } catch (error) {
