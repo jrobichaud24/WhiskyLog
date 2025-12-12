@@ -4,7 +4,7 @@ import fs from 'fs';
 dotenv.config();
 
 const LOG_FILE = 'debug_log.txt';
-fs.writeFileSync(LOG_FILE, ''); // Clear log
+fs.writeFileSync(LOG_FILE, '');
 
 function log(message: string) {
     console.log(message);
@@ -12,38 +12,48 @@ function log(message: string) {
 }
 
 async function testGoogleSeach() {
-    const realKey = process.env.GOOGLE_API_KEY;
-    const realCx = process.env.GOOGLE_CX;
+    const realKey = process.env.GOOGLE_API_KEY; // Length 39
+    const realCx = process.env.GOOGLE_CX;       // Length 17
 
     if (!realKey || !realCx) {
         log("Missing GOOGLE_API_KEY or GOOGLE_CX");
         return;
     }
 
+    // Verify if real keys work first
+    log("Verifying baseline...");
+    await runRequest(realKey, realCx, "Baseline");
+
     const scenarios = [
-        { name: "Invalid CX", key: realKey, cx: "undefined", q: "Lagavulin" },
-        { name: "Missing CX", key: realKey, cx: "", q: "Lagavulin" }, // Might default to something?
-        { name: "Invalid Key", key: "invalid_key", cx: realCx, q: "Lagavulin" },
-        { name: "Undefined String CX", key: realKey, cx: "undefined", q: "Lagavulin" },
+        { name: "Key with leading space", key: " " + realKey, cx: realCx },
+        { name: "Key with trailing space", key: realKey + " ", cx: realCx },
+        { name: "CX with leading space", key: realKey, cx: " " + realCx },
+        { name: "CX with trailing space", key: realKey, cx: realCx + " " },
+        { name: "CX with newline", key: realKey, cx: realCx + "\n" },
+        { name: "Key with newline", key: realKey + "\n", cx: realCx },
     ];
 
     for (const scenario of scenarios) {
-        log(`\n--- Testing ${scenario.name} ---`);
-        const qParam = encodeURIComponent(scenario.q + " whisky bottle");
-        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${scenario.key}&cx=${scenario.cx}&q=${qParam}&searchType=image&num=1`;
+        await runRequest(scenario.key, scenario.cx, scenario.name);
+    }
+}
 
-        try {
-            const response = await fetch(googleUrl);
-            const data = await response.json();
+async function runRequest(key: string, cx: string, name: string) {
+    log(`\n--- Testing ${name} ---`);
+    // Note: we inject key/cx directly into URL string as the server does
+    const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${key}&cx=${cx}&q=test&searchType=image&num=1`;
 
-            if (data.error) {
-                log("FAIL: " + JSON.stringify(data.error, null, 2));
-            } else {
-                log("SUCCESS. Items found: " + (data.items?.length || 0));
-            }
-        } catch (error) {
-            log("EXCEPTION: " + error);
+    try {
+        const response = await fetch(googleUrl);
+        const data = await response.json();
+
+        if (data.error) {
+            log(`FAIL (${response.status}): ` + JSON.stringify(data.error, null, 2));
+        } else {
+            log(`SUCCESS (${response.status}). Items: ` + (data.items?.length || 0));
         }
+    } catch (error) {
+        log("EXCEPTION: " + error);
     }
 }
 

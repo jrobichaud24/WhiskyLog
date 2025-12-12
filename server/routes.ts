@@ -12,6 +12,8 @@ import {
   bulkDistillerySchema,
   bulkProductSchema
 } from "@shared/schema";
+import fs from 'fs';
+import path from 'path';
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
@@ -1221,11 +1223,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_CX && whiskyData.name) {
         console.log(`Searching for image: ${whiskyData.name}`);
         try {
-          const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CX}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
+          const apiKey = process.env.GOOGLE_API_KEY?.trim() || "";
+          const cx = process.env.GOOGLE_CX?.trim() || "";
+          // Note: using trimmed keys
+          const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
 
-          console.log(`[DEBUG] Google Search URL: ${googleUrl.replace(process.env.GOOGLE_API_KEY || '', 'API_KEY').replace(process.env.GOOGLE_CX || '', 'CX')}`);
-          console.log(`[DEBUG] CX Length: ${process.env.GOOGLE_CX?.length}, Key Length: ${process.env.GOOGLE_API_KEY?.length}`);
-          console.log(`[DEBUG] whiskyData.name: "${whiskyData.name}"`);
+          const debugLogPath = path.join(process.cwd(), 'server_debug.log');
+          const logMsg = `[${new Date().toISOString()}] DEBUG Google Search:\n` +
+            `URL: ${googleUrl.replace(apiKey, 'API_KEY').replace(cx || 'CX', 'CX')}\n` +
+            `CX Len: ${cx.length}, Key Len: ${apiKey.length}\n` +
+            `Query: "${whiskyData.name}"\n\n`;
+
+          console.log(logMsg);
+          try {
+            fs.appendFileSync(debugLogPath, logMsg);
+          } catch (e) { console.error("Failed to write to debug log", e); }
 
           const imageResponse = await fetch(googleUrl);
           const imageData = await imageResponse.json();

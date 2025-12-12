@@ -1,0 +1,5 @@
+[2025-12-12T21:49:48.858Z] DEBUG Google Search:
+URL: https://www.googleapis.com/customsearch/v1?key=API_KEY&cx=CX&q=The%20Glenlivet%2015%20Year%20Old%20whisky%20bottle&searchType=image&num=1
+CX Len: 17, Key Len: 39
+Query: "The Glenlivet 15 Year Old"
+
