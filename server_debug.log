@@ -3,3 +3,33 @@ URL: https://www.googleapis.com/customsearch/v1?key=API_KEY&cx=CX&q=The%20Glenli
 CX Len: 17, Key Len: 39
 Query: "The Glenlivet 15 Year Old"
 
+[2025-12-12T22:10:22.372Z] DEBUG Image Search:
+Service: TheWhiskyEdition
+Query: "The Glenlivet 10 Year Old"
+URL: https://thewhiskyedition.com/api/whisky/get?search=The%20Glenlivet%2010%20Year%20Old
+
+SUCCESS: Found image https://static-content-provider.com/whisky/images/caol-ila-2011-2023-malts-of-scotland-foto.png
+
+[2025-12-12T22:13:32.226Z] DEBUG Image Search:
+Service: TheWhiskyEdition
+Query: "Glenfarclas 15 Year Old"
+URL: https://thewhiskyedition.com/api/whisky/get?search=Glenfarclas%2015%20Year%20Old
+
+SUCCESS: Found image https://static-content-provider.com/whisky/images/caol-ila-2011-2023-malts-of-scotland-foto.png
+
+[2025-12-12T22:37:24.579Z] DEBUG Image Search:
+Service: TheWhiskyEdition
+Query: "Glenfarclas 18 Year Old"
+URL: https://thewhiskyedition.com/api/whisky/get?search=Glenfarclas%2018%20Year%20Old
+
+SUCCESS: Found image https://static-content-provider.com/whisky/images/caol-ila-2011-2023-malts-of-scotland-foto.png
+
+[2025-12-12T22:39:45.101Z] DEBUG Image Search:
+Service: TheWhiskyEdition
+Query: "Glenfarclas 18 Year Old Single Malt Scotch Whisky"
+URL: https://thewhiskyedition.com/api/whisky/get?search=Glenfarclas%2018%20Year%20Old%20Single%20Malt%20Scotch%20Whisky
+
+IGNORED GENERIC: https://static-content-provider.com/whisky/images/caol-ila-2011-2023-malts-of-scotland-foto.png
+
+MATCH FOUND BUT GENERIC/NO IMAGE
+

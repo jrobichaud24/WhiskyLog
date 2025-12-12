@@ -1192,12 +1192,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             - description: A brief description based on the query or general knowledge about this whisky
             
             If the query is too vague to identify a specific whisky, try to provide the most likely match or a generic description.
-            Only respond with the JSON, no other text.`
+            If you absolutely cannot identify it, return: {"name": "Unknown Whisky", "distillery": "Unknown", "description": "Could not identify details"}
+            IMPORTANT: You must ONLY respond with valid JSON. Do not include any conversational text before or after the JSON.`
           }
         ]
       });
 
-      let whiskyData;
+      let whiskyData: any;
       try {
         const content = response.content[0];
         if (content.type === 'text') {
@@ -1214,48 +1215,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
+
+        // Debug logging for Anthropic failure
+        try {
+          // Use absolute path to ensure we write to the correct location
+          const debugLogPath = "C:\\Users\\jtrob\\WhiskyLog\\server_debug.log";
+          const logMsg = `[${new Date().toISOString()}] ERROR Anthropic Parse:\n` +
+            `Query: "${query}"\n` +
+            `Raw Output: ${response.content[0].type === 'text' ? response.content[0].text : 'Non-text response'}\n` +
+            `Error: ${parseError}\n\n`;
+          console.error("!!!ANTHROPIC_ERROR_RAW!!!", logMsg);
+          fs.appendFileSync(debugLogPath, logMsg);
+        } catch (e) { console.error("Failed to write log", e); }
+
         return res.status(422).json({
           message: "Could not identify whisky details from the search query."
         });
       }
 
-      // Perform Image Search if keys are available
-      if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_CX && whiskyData.name) {
-        console.log(`Searching for image: ${whiskyData.name}`);
+      // Perform Image Search via TheWhiskyEdition API (Alternative to Google)
+      if (whiskyData.name) {
+        console.log(`Searching for image via TheWhiskyEdition: ${whiskyData.name}`);
         try {
-          const apiKey = process.env.GOOGLE_API_KEY?.trim() || "";
-          const cx = process.env.GOOGLE_CX?.trim() || "";
-          // Note: using trimmed keys
-          const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
+          const searchUrl = `https://thewhiskyedition.com/api/whisky/get?search=${encodeURIComponent(whiskyData.name)}`;
 
+          // Log for debugging
           const debugLogPath = path.join(process.cwd(), 'server_debug.log');
-          const logMsg = `[${new Date().toISOString()}] DEBUG Google Search:\n` +
-            `URL: ${googleUrl.replace(apiKey, 'API_KEY').replace(cx || 'CX', 'CX')}\n` +
-            `CX Len: ${cx.length}, Key Len: ${apiKey.length}\n` +
-            `Query: "${whiskyData.name}"\n\n`;
+          const logMsg = `[${new Date().toISOString()}] DEBUG Image Search:\n` +
+            `Service: TheWhiskyEdition\n` +
+            `Query: "${whiskyData.name}"\n` +
+            `URL: ${searchUrl}\n\n`;
 
           console.log(logMsg);
           try {
             fs.appendFileSync(debugLogPath, logMsg);
-          } catch (e) { console.error("Failed to write to debug log", e); }
+          } catch (e) { /* ignore log write error */ }
 
-          const imageResponse = await fetch(googleUrl);
-          const imageData = await imageResponse.json();
+          const response = await fetch(searchUrl);
 
-          if (imageData.error) {
-            console.error("Google Search API Error:", JSON.stringify(imageData.error, null, 2));
-          } else if (imageData.items && imageData.items.length > 0) {
-            whiskyData.image_url = imageData.items[0].link;
-            console.log(`Found image URL: ${whiskyData.image_url}`);
+          if (response.ok) {
+            const data = await response.json();
+
+            if (Array.isArray(data) && data.length > 0) {
+              const bestMatch = data[0];
+              // Prefer foto_url, fallback to image_url
+              let foundImage = bestMatch.foto_url || bestMatch.image_url;
+
+              // Filter out known generic/placeholder images
+              if (foundImage && (
+                foundImage.toLowerCase().includes("scotland.png") ||
+                foundImage.toLowerCase().includes("whisky_og.png") ||
+                foundImage.toLowerCase().includes("default") ||
+                foundImage.toLowerCase().includes("malts-of-scotland")
+              )) {
+                console.log(`Ignoring generic image: ${foundImage}`);
+                fs.appendFileSync(debugLogPath, `IGNORED GENERIC: ${foundImage}\n\n`);
+                foundImage = null;
+              }
+
+              if (foundImage) {
+                whiskyData.image_url = foundImage;
+                console.log(`Found image URL: ${foundImage}`);
+                fs.appendFileSync(debugLogPath, `SUCCESS: Found image ${foundImage}\n\n`);
+              } else {
+                console.log("Match found but no valid (non-generic) image url present.");
+                fs.appendFileSync(debugLogPath, `MATCH FOUND BUT GENERIC/NO IMAGE\n\n`);
+              }
+            } else {
+              console.log("No results found in TheWhiskyEdition.");
+              fs.appendFileSync(debugLogPath, `NO RESULTS\n\n`);
+            }
           } else {
-            console.log("No images found in Google Search results.");
+            console.error(`API Error: ${response.status} ${response.statusText}`);
           }
         } catch (imageError) {
           console.error("Image search failed:", imageError);
-          // Continue without image
         }
       } else {
-        console.log("Skipping image search: Missing keys or whisky name.");
+        console.log("Skipping image search: Missing whisky name.");
       }
 
       // Search for existing product in database
