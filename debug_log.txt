@@ -1,0 +1,71 @@
+
+--- Testing Invalid CX ---
+FAIL: {
+  "code": 400,
+  "message": "Request contains an invalid argument.",
+  "errors": [
+    {
+      "message": "Request contains an invalid argument.",
+      "domain": "global",
+      "reason": "badRequest"
+    }
+  ],
+  "status": "INVALID_ARGUMENT"
+}
+
+--- Testing Missing CX ---
+FAIL: {
+  "code": 400,
+  "message": "Request contains an invalid argument.",
+  "errors": [
+    {
+      "message": "Request contains an invalid argument.",
+      "domain": "global",
+      "reason": "badRequest"
+    }
+  ],
+  "status": "INVALID_ARGUMENT"
+}
+
+--- Testing Invalid Key ---
+FAIL: {
+  "code": 400,
+  "message": "API key not valid. Please pass a valid API key.",
+  "errors": [
+    {
+      "message": "API key not valid. Please pass a valid API key.",
+      "domain": "global",
+      "reason": "badRequest"
+    }
+  ],
+  "status": "INVALID_ARGUMENT",
+  "details": [
+    {
+      "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+      "reason": "API_KEY_INVALID",
+      "domain": "googleapis.com",
+      "metadata": {
+        "service": "customsearch.googleapis.com"
+      }
+    },
+    {
+      "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+      "locale": "en-US",
+      "message": "API key not valid. Please pass a valid API key."
+    }
+  ]
+}
+
+--- Testing Undefined String CX ---
+FAIL: {
+  "code": 400,
+  "message": "Request contains an invalid argument.",
+  "errors": [
+    {
+      "message": "Request contains an invalid argument.",
+      "domain": "global",
+      "reason": "badRequest"
+    }
+  ],
+  "status": "INVALID_ARGUMENT"
+}

@@ -1223,6 +1223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CX}&q=${encodeURIComponent(whiskyData.name + " whisky bottle")}&searchType=image&num=1`;
 
+          console.log(`[DEBUG] Google Search URL: ${googleUrl.replace(process.env.GOOGLE_API_KEY || '', 'API_KEY').replace(process.env.GOOGLE_CX || '', 'CX')}`);
+          console.log(`[DEBUG] CX Length: ${process.env.GOOGLE_CX?.length}, Key Length: ${process.env.GOOGLE_API_KEY?.length}`);
+          console.log(`[DEBUG] whiskyData.name: "${whiskyData.name}"`);
+
           const imageResponse = await fetch(googleUrl);
           const imageData = await imageResponse.json();
 
