@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -93,6 +94,24 @@ export default function Browse() {
     const matchesWishlist = !showWishlistOnly || isInWishlist(product.id);
 
     return matchesSearch && matchesDistillery && matchesRegion && matchesMinABV && matchesMaxABV && matchesWishlist;
+  }).sort((a, b) => {
+    const distilleryA = a.distillery ? distilleryMap[a.distillery] : null;
+    const distilleryB = b.distillery ? distilleryMap[b.distillery] : null;
+
+    // 1. Sort by Region
+    const regionA = distilleryA?.region || "";
+    const regionB = distilleryB?.region || "";
+    const regionCompare = regionA.localeCompare(regionB);
+    if (regionCompare !== 0) return regionCompare;
+
+    // 2. Sort by Distillery Name
+    const distNameA = distilleryA?.name || "";
+    const distNameB = distilleryB?.name || "";
+    const distCompare = distNameA.localeCompare(distNameB);
+    if (distCompare !== 0) return distCompare;
+
+    // 3. Sort by Whisky Name
+    return a.name.localeCompare(b.name);
   });
 
   const hasActiveFilters = searchTerm || selectedDistillery !== "all" || selectedRegion !== "all" || minABV || maxABV || showWishlistOnly;
@@ -417,6 +436,7 @@ export default function Browse() {
         </Card>
 
         {/* Products Grid */}
+        {/* Products Nested View */}
         {productsLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-12 w-12 animate-spin text-amber-600" />
@@ -556,195 +576,197 @@ export default function Browse() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {filteredProducts.map((product) => {
-              const distillery = product.distillery ? distilleryMap[product.distillery] : null;
+          <Accordion type="multiple" className="space-y-4">
+            {/* Group by Region */}
+            {(() => {
+              // Group products by region -> distillery
+              const grouped = filteredProducts.reduce((acc, product) => {
+                const distillery = product.distillery ? distilleryMap[product.distillery] : null;
+                const region = distillery?.region || "Unknown Region";
+                const distilleryName = distillery?.name || "Unknown Distillery";
 
-              return (
-                <Card
-                  key={product.id}
-                  className="group hover:shadow-xl transition-all duration-300 bg-white/95 backdrop-blur-sm border-0"
-                  data-testid={`card-product-${product.id}`}
+                if (!acc[region]) acc[region] = {};
+                if (!acc[region][distilleryName]) acc[region][distilleryName] = [];
+                acc[region][distilleryName].push(product);
+                return acc;
+              }, {} as Record<string, Record<string, Product[]>>);
+
+              // Render Accordions
+              return Object.entries(grouped).map(([region, distilleriesInRegion]) => (
+                <AccordionItem
+                  key={region}
+                  value={region}
+                  className="bg-white/80 backdrop-blur-sm border border-amber-100 rounded-lg overflow-hidden shadow-sm"
                 >
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                      {/* Product Image */}
-                      <div className="lg:col-span-2">
-                        <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center">
-                          {product.productImage ? (
-                            <img
-                              src={product.productImage}
-                              alt={`${product.name} bottle`}
-                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
-                            <Package className="h-12 w-12 mb-2 opacity-50" />
-                            <span className="text-xs text-amber-500 opacity-75">No Image</span>
-                          </div>
-                        </div>
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-amber-50/50">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-100 p-2 rounded-full">
+                        <Building2 className="h-5 w-5 text-amber-700" />
                       </div>
-
-                      {/* Main Info */}
-                      <div className="lg:col-span-3 space-y-3">
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-800 group-hover:text-amber-700 transition-colors mb-2">
-                            {product.name}
-                          </h3>
-                          {distillery && (
-                            <div className="flex items-center text-slate-600 mb-2">
-                              <Building2 className="h-4 w-4 mr-2 text-amber-600" />
-                              <span className="font-medium">{distillery.name}</span>
-                            </div>
-                          )}
-                          {distillery?.region && (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                              {distillery.region}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Technical Details */}
-                      <div className="lg:col-span-2 space-y-2">
-                        {product.abvPercent && (
-                          <div className="flex items-center text-sm text-slate-600">
-                            <Percent className="h-4 w-4 mr-2 text-amber-600" />
-                            <span className="font-medium">{product.abvPercent}% ABV</span>
-                          </div>
-                        )}
-                        {product.volumeCl && (
-                          <div className="text-sm text-slate-600">
-                            <span className="font-medium">Volume:</span> {product.volumeCl}cl
-                          </div>
-                        )}
-                        {product.filtration && (
-                          <div className="text-sm text-slate-600">
-                            <span className="font-medium">Filtration:</span> {product.filtration}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Description & Tasting Notes */}
-                      <div className="lg:col-span-4 space-y-3">
-                        {product.description && (
-                          <p className="text-sm text-slate-600 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-
-                        {/* Condensed Tasting Notes */}
-                        {(product.tastingNose || product.tastingTaste || product.tastingFinish) && (
-                          <div className="space-y-1">
-                            {product.tastingNose && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Nose:</span> {product.tastingNose.substring(0, 80)}{product.tastingNose.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                            {product.tastingTaste && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Taste:</span> {product.tastingTaste.substring(0, 80)}{product.tastingTaste.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                            {product.tastingFinish && (
-                              <p className="text-xs text-slate-600">
-                                <span className="font-medium text-amber-700">Finish:</span> {product.tastingFinish.substring(0, 80)}{product.tastingFinish.length > 80 ? '...' : ''}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="lg:col-span-1 flex flex-col gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => handleToggleWishlist(product.id)}
-                              disabled={isInCollection(product.id)}
-                              variant="outline"
-                              className={`border-2 w-8 h-8 p-0 ${isInCollection(product.id)
-                                ? "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-                                : isInWishlist(product.id)
-                                  ? "border-green-400 text-green-700 bg-green-100 hover:bg-green-150 hover:border-green-500"
-                                  : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
-                                }`}
-                              data-testid={`button-toggle-wishlist-${product.id}`}
-                            >
-                              <Heart
-                                className={`h-4 w-4 ${isInWishlist(product.id)
-                                  ? "fill-green-600 font-bold stroke-2"
-                                  : ""
-                                  }`}
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              {isInCollection(product.id)
-                                ? "Already in collection"
-                                : isInWishlist(product.id)
-                                  ? "Remove from wishlist"
-                                  : "Add to wishlist"
-                              }
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              onClick={() => handleToggleCollection(product.id)}
-                              className={`w-8 h-8 p-0 shadow-lg border-0 ${isInCollection(product.id)
-                                ? "bg-green-500 hover:bg-green-600 text-white"
-                                : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                                }`}
-                              data-testid={`button-toggle-collection-${product.id}`}
-                            >
-                              {isInCollection(product.id) ? (
-                                <Check className="h-4 w-4" />
-                              ) : (
-                                <Plus className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{isInCollection(product.id) ? "Remove from collection" : "Add to Journal"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {product.productUrl && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-2 border-amber-200 text-amber-700 hover:bg-amber-50 w-8 h-8 p-0"
-                                onClick={() => product.productUrl && window.open(product.productUrl, '_blank')}
-                                data-testid={`button-view-product-${product.id}`}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Visit Website</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
+                      <span className="text-lg font-playfair font-semibold text-slate-800">
+                        {region}
+                      </span>
+                      <Badge variant="secondary" className="ml-2 bg-slate-100 text-slate-600">
+                        {Object.values(distilleriesInRegion).reduce((a, b) => a + b.length, 0)} Whiskies
+                      </Badge>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6 pt-2 bg-slate-50/50">
+                    <Accordion type="multiple" className="space-y-3">
+                      {Object.entries(distilleriesInRegion).map(([distilleryName, productsInDistillery]) => (
+                        <AccordionItem
+                          key={distilleryName}
+                          value={distilleryName}
+                          className="bg-white border border-slate-200 rounded-lg overflow-hidden"
+                        >
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-700">{distilleryName}</span>
+                              <Badge variant="outline" className="text-slate-500 border-slate-200">
+                                {productsInDistillery.length}
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="p-4">
+                            <div className="grid grid-cols-1 gap-4">
+                              {productsInDistillery.map((product) => {
+                                const distillery = product.distillery ? distilleryMap[product.distillery] : null;
+                                return (
+                                  <Card
+                                    key={product.id}
+                                    className="group hover:shadow-md transition-all duration-300 border-slate-200"
+                                    data-testid={`card-product-${product.id}`}
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                                        {/* Product Image - Smaller in list view */}
+                                        <div className="lg:col-span-1">
+                                          <div className="w-16 h-16 rounded-md overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center mx-auto lg:mx-0">
+                                            {product.productImage ? (
+                                              <img
+                                                src={product.productImage}
+                                                alt={`${product.name} bottle`}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                  const target = e.target as HTMLImageElement;
+                                                  target.style.display = 'none';
+                                                  target.nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                              />
+                                            ) : null}
+                                            <div className={`flex flex-col items-center justify-center text-amber-600 ${product.productImage ? 'hidden' : ''}`}>
+                                              <Package className="h-6 w-6 opacity-50" />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Main Info */}
+                                        <div className="lg:col-span-4">
+                                          <h3 className="font-bold text-slate-800 text-lg group-hover:text-amber-700 transition-colors">
+                                            {product.name}
+                                          </h3>
+                                          {distillery && (
+                                            <p className="text-sm text-slate-500">{distillery.name}</p>
+                                          )}
+                                        </div>
+
+                                        {/* Technical Details */}
+                                        <div className="lg:col-span-4 flex flex-wrap gap-4 text-sm text-slate-600">
+                                          {product.abvPercent && (
+                                            <div className="flex items-center">
+                                              <Percent className="h-4 w-4 mr-1 text-amber-600" />
+                                              <span>{product.abvPercent}%</span>
+                                            </div>
+                                          )}
+                                          {product.volumeCl && (
+                                            <div className="flex items-center">
+                                              <span>{product.volumeCl}cl</span>
+                                            </div>
+                                          )}
+                                          {product.filtration && (
+                                            <div className="hidden lg:block">
+                                              <span className="px-2 py-0.5 bg-slate-100 rounded-full text-xs">
+                                                {product.filtration}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="lg:col-span-3 flex justify-end gap-2">
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                onClick={() => handleToggleWishlist(product.id)}
+                                                disabled={isInCollection(product.id)}
+                                                variant="outline"
+                                                className={`h-9 w-9 p-0 rounded-full ${isInCollection(product.id)
+                                                  ? "border-slate-200 text-slate-300 bg-slate-50 cursor-not-allowed"
+                                                  : isInWishlist(product.id)
+                                                    ? "border-green-400 text-green-700 bg-green-50 hover:bg-green-100"
+                                                    : "border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-green-600"
+                                                  }`}
+                                              >
+                                                <Heart
+                                                  className={`h-4 w-4 ${isInWishlist(product.id) ? "fill-current" : ""}`}
+                                                />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                onClick={() => handleToggleCollection(product.id)}
+                                                className={`h-9 w-9 p-0 rounded-full shadow-none ${isInCollection(product.id)
+                                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                                  : "bg-amber-600 hover:bg-amber-700 text-white"
+                                                  }`}
+                                              >
+                                                {isInCollection(product.id) ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{isInCollection(product.id) ? "Owned" : "Add to Collection"}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+
+                                          {product.productUrl && (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-9 w-9 p-0 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                                  onClick={() => window.open(product.productUrl!, '_blank')}
+                                                >
+                                                  <ExternalLink className="h-4 w-4" />
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent><p>Visit Website</p></TooltipContent>
+                                            </Tooltip>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </AccordionContent>
+                </AccordionItem>
+              ));
+            })()}
+          </Accordion>
         )}
       </main>
 
